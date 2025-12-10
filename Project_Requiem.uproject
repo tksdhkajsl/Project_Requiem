@@ -11,6 +11,26 @@
 			"AdditionalDependencies": [
 				"Engine"
 			]
+<<<<<<< HEAD
+=======
+		},
+		{
+			"Name": "DataInfo",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
+			"Name": "ComponentSystems",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+>>>>>>> middlesize
 		}
 	],
 	"Plugins": [
