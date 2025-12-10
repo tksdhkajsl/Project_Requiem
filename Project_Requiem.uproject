@@ -11,8 +11,6 @@
 			"AdditionalDependencies": [
 				"Engine"
 			]
-<<<<<<< HEAD
-=======
 		},
 		{
 			"Name": "DataInfo",
@@ -30,7 +28,6 @@
 			"AdditionalDependencies": [
 				"Engine"
 			]
->>>>>>> middlesize
 		}
 	],
 	"Plugins": [
