@@ -37,6 +37,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	EBossState, OldState
 );
 
+// 페이즈 변경
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
+	FOnBossPhaseChanged,
+	int32, NewPhase,
+	int32, OldPhase
+);
+
 UCLASS()
 class PROJECT_REQUIEM_API ABossBase : public ACharacter
 {
@@ -125,6 +132,9 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossStateChanged OnBossStateChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
+	FOnBossPhaseChanged OnBossPhaseChanged;
+
 	// 플레이어 공격 함수
 	void PerformMeleeAttack();
 
@@ -136,6 +146,52 @@ public:
 		class AController* EventInstigator,
 		AActor* DamageCauser
 		) override;
+
+protected:
+	// 페이즈 관련
+
+	// 페이즈 시스템 사용 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
+	bool bUsePhaseSystem = false;
+
+	// 현재 페이즈
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
+	int32 CurrentPhase = 1;
+
+	// 2페이즈 시작 HP비율
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bUsePhaseSystem"))
+	float Phase2StartHPRatio = 0.5f;
+
+	// 2페이즈 스탯 배수
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (EditCondition = "bUsePhaseSystem"))
+	float Phase2_WalkSpeedMultiplier = 1.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (EditCondition = "bUsePhaseSystem"))
+	float Phase2_MeleeDamageMultiplier = 1.5f;
+
+public:
+	UFUNCTION(BlueprintNativeEvent, Category = "Boss|Phase")
+	void OnPhaseChanged(int32 NewPhase, int32 OldPhase);
+	virtual void OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Phase")
+	void FinishPhaseChange();
+
+// 애니메이션 몽타주
+
+
+protected:
+	// 근접 공격 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
+	UAnimMontage* MeleeAttackMontage = nullptr;
+
+	// 2페이즈 시작 연출 몽타주 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
+	UAnimMontage* PhaseChangeMontage = nullptr;
+
+	// 죽을 때 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
+	UAnimMontage* DeathMontage = nullptr;
 
 
 

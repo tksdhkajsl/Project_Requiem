@@ -203,10 +203,30 @@ void ABossBase::UpdateDead(float DeltaTime)
 {
 }
 
-// 데미지 받기
+// 보스 데미지 받기
 float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	// 페이즈 확인
+	if (bUsePhaseSystem && CurrentPhase == 1 && MaxHP > 0.0f)
+	{
+		const float HPRatio = CurrentHP / MaxHP;
+
+		if (HPRatio <= Phase2StartHPRatio)
+		{
+			const int32 OldPhase = CurrentPhase;
+			CurrentPhase = 2;
+
+			// 페이즈 변경 델리게이트
+			OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
+
+			OnPhaseChanged(CurrentPhase, OldPhase);
+
+			// 상태를 페이즈 체인지로 전환 (연출용)
+			SetBossState(EBossState::PhaseChange);
+		}
+	}
 
 	if (ActualDamage <= 0.0f || CurrentState == EBossState::Dead)
 	{
@@ -235,6 +255,33 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 }
 
+// 페이즈 전환 구현
+void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
+{
+	// 2페이즈 진입시 스탯 변경
+	if (NewPhase == 2 && bUsePhaseSystem)
+	{
+		// 이동 속도, 공격력 배수 적용
+		WalkSpeed *= Phase2_WalkSpeedMultiplier;
+		MeleeDamage *= Phase2_MeleeDamageMultiplier;
+
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->MaxWalkSpeed = WalkSpeed;
+		}
+	}
+}
+
+// 페이즈 전환 끝
+void ABossBase::FinishPhaseChange()
+{
+	if (CurrentState == EBossState::PhaseChange)
+	{
+		SetBossState(EBossState::Chase);
+	}
+}
+
+//보스 근접 공격 수행
 void ABossBase::PerformMeleeAttack()
 {
 	if (CurrentState == EBossState::Dead)
@@ -253,6 +300,19 @@ void ABossBase::PerformMeleeAttack()
 		return;
 	}
 
+	// 공격 몽타주 재생
+	if (MeleeAttackMontage)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		{
+			if (!AnimInstance->IsAnyMontagePlaying())
+			{
+				AnimInstance->Montage_Play(MeleeAttackMontage);
+			}
+		}
+	}
+
+	// 데미지 처리
 	AController* BossController = GetController();
 
 	UGameplayStatics::ApplyDamage(
