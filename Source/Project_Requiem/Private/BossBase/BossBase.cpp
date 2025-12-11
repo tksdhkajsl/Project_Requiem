@@ -4,6 +4,7 @@
 #include "Bossbase/BossBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Animation/AnimInstance.h"
 
 // Sets default values
 ABossBase::ABossBase()
@@ -208,26 +209,6 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 {
 	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	// 페이즈 확인
-	if (bUsePhaseSystem && CurrentPhase == 1 && MaxHP > 0.0f)
-	{
-		const float HPRatio = CurrentHP / MaxHP;
-
-		if (HPRatio <= Phase2StartHPRatio)
-		{
-			const int32 OldPhase = CurrentPhase;
-			CurrentPhase = 2;
-
-			// 페이즈 변경 델리게이트
-			OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
-
-			OnPhaseChanged(CurrentPhase, OldPhase);
-
-			// 상태를 페이즈 체인지로 전환 (연출용)
-			SetBossState(EBossState::PhaseChange);
-		}
-	}
-
 	if (ActualDamage <= 0.0f || CurrentState == EBossState::Dead)
 	{
 		return 0.0f;
@@ -249,9 +230,34 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 		// 브로드캐스트 EXP
 		OnBossDead.Broadcast(EXP);
+
 	}
 
-	return ActualDamage;
+
+	// 페이즈 확인
+	if (bUsePhaseSystem && CurrentPhase == 1 && MaxHP > 0.0f)
+	{
+		const float HPRatio = CurrentHP / MaxHP;
+
+		if (HPRatio <= Phase2StartHPRatio)
+		{
+			const int32 OldPhase = CurrentPhase;
+			CurrentPhase = 2;
+
+			// 페이즈 변경 델리게이트
+			OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
+
+			OnPhaseChanged(CurrentPhase, OldPhase);
+
+			// 페이즈 체인지 연출
+			SetBossState(EBossState::PhaseChange);
+		}
+	}
+
+
+		return ActualDamage;
+
+
 
 }
 
@@ -281,7 +287,7 @@ void ABossBase::FinishPhaseChange()
 	}
 }
 
-//보스 근접 공격 수행
+// 보스 근접 공격 수행
 void ABossBase::PerformMeleeAttack()
 {
 	if (CurrentState == EBossState::Dead)
