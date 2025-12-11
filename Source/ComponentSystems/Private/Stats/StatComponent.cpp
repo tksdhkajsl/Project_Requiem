@@ -16,7 +16,7 @@ void UStatComponent::BeginPlay()
 	}
 }
 
-//----------------ÃÊ±âÈ­ °ü·Ã----------------------
+//----------------ï¿½Ê±ï¿½È­ ï¿½ï¿½ï¿½ï¿½----------------------
 void UStatComponent::InitializeStatsComponent()
 {
 
@@ -54,12 +54,12 @@ void UStatComponent::InitializeStatsComponent()
 	OnRegenStatsUpdated.Broadcast(StatsNonRegenEntries);
 
 }
-//----------------°æÇèÄ¡ °ü·Ã----------------------
+//----------------ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½----------------------
 void UStatComponent::AddCurrentExp(float Amount)
 {
 	CurrentExp += Amount;
 }
-//----------------½ºÅÈ °ü·Ã----------------------
+//----------------ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½----------------------
 void UStatComponent::InitializeStats()
 {
 	MapRegenStats();
@@ -92,7 +92,7 @@ void UStatComponent::ChangeStatCurrent(EFullStats StatType, float DeltaCurrent)
 	if (FCoreStat* StatNon = StatsNonRegenMap.Find(StatType))
 	{
 		StatNon->Current = FMath::Clamp(StatNon->Current + DeltaCurrent, 0.f, StatNon->Max);
-		// ÇÊ¿äÇÏ¸é NonRegen Àü¿ë µ¨¸®°ÔÀÌÆ® È£Ãâ
+		// ï¿½Ê¿ï¿½ï¿½Ï¸ï¿½ NonRegen ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® È£ï¿½ï¿½
 		return;
 	}
 
@@ -125,7 +125,7 @@ float UStatComponent::GetStatCurrent(EFullStats StatType) const
 	return 0.f;
 }
 
-//----------------Å¸ÀÌ¸Ó----------------------
+//----------------Å¸ï¿½Ì¸ï¿½----------------------
 void UStatComponent::HandleStatRegeneration()
 {
 
@@ -143,7 +143,7 @@ void UStatComponent::HandleStatRegeneration()
 				? EnumPtr->GetNameStringByValue((int64)Pair.Key)
 				: TEXT("Unknown");
 
-			UE_LOG(LogTemp, Log, TEXT("[REGEN] %s ¡æ %.2f / %.2f  (TickRate: %.2f)"),
+			UE_LOG(LogTemp, Log, TEXT("[REGEN] %s ï¿½ï¿½ %.2f / %.2f  (TickRate: %.2f)"),
 				*StatName,
 				Stat.Current,
 				Stat.Max,
