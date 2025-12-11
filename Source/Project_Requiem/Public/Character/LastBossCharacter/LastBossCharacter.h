@@ -6,8 +6,10 @@
 #include "Character/BaseCharacter.h"
 #include "LastBossCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);
+// 플레이어에게 보낼 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount);	// 데미지
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);			// 경험치
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLastBossName, FText, BossName);		// 이름
 
 /**
  * 
@@ -26,8 +28,10 @@ public:
 	// 델리게이트
 	FOnApplyDamage OnApplyDamage;
 	FOnApplyExp OnApplyExp;
+	FOnLastBossName OnLastBossName;
 
 public:
+	// 이동 위치
 	virtual void Move(const FVector& Direction, float Value) override;
 
 	// 데미지를 줄 때
@@ -42,6 +46,7 @@ public:
 	// 경험치 줄 때
 	void ApplyExp(float ExpAmount);
 
+
 protected:
 	// 보스 패턴 별 몽타주 추가 함수
 	void AddPatternMontage();
@@ -49,13 +54,13 @@ protected:
 	// 보스의 패턴 재생 함수
 	void RandomPatternPlay();
 
-
 protected:
+	// 투사체 스폰 위치
+	TObjectPtr<class USceneComponent> SpawnProjectileLocation;
+
 	// 보스 상태에 따라 실행될 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
 	TObjectPtr<class UAnimMontage> SpawnMontage = nullptr;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
-	TObjectPtr<class UAnimMontage> MoveMontage = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
 	TObjectPtr<class UAnimMontage> DieMontage = nullptr;
 
@@ -71,7 +76,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage|Phase 1")
 	TObjectPtr<class UAnimMontage> PhaseOneMontage5 = nullptr;
 	
-	// 보스 1페이즈 패턴 때 실행될 몽타주
+	// 보스 2페이즈 패턴 때 실행될 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage|Phase 2")
 	TObjectPtr<class UAnimMontage> PhaseTwoMontage1 = nullptr;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage|Phase 2")
@@ -87,12 +92,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "00_Setting|Exp", meta = (ClampMin = "0"))
 	float DropExp = 0.0f;
 
-	UPROPERTY(VisibleAnywhere, Category = "Phase")
+	UPROPERTY(VisibleAnywhere, Category = "Information|Phase")
 	int32 Phase = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Information|Name")
+	FText BossName;
+
 private:
 	TArray<TObjectPtr<class UAnimMontage>> PhaseOnePatterns;
 	TArray<TObjectPtr<class UAnimMontage>> PhaseTwoPatterns;
 
 	float MinHp = 0.0f;
-
 };

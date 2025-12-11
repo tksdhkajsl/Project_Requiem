@@ -26,11 +26,17 @@ public:
 		UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
 
+	// 투사체 스폰 함수
+	void DoSpawnProjectile(TSubclassOf<AActor> InSpawnActor);
+
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
+	// 스폰할 액터
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnActor")
+	TSubclassOf<AActor> Projectile = nullptr;
 
 private:
-	bool bCanAttack = true;
+	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
 
+	// 스폰된 액터 저장용
+	TWeakObjectPtr<AActor> SpawnedProjectile = nullptr;
 };

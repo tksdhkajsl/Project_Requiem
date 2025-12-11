@@ -3,15 +3,20 @@
 
 #include "Character/LastBossCharacter/LastBossCharacter.h"
 #include "ComponentSystems/Public/Stats/StatComponent.h"
+#include "Components/SceneComponent.h"
 
 ALastBossCharacter::ALastBossCharacter()
 {
+	PrimaryActorTick.bCanEverTick = false;
 
+	SpawnProjectileLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Projectile"));
 }
 
 void ALastBossCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OnLastBossName.Broadcast(BossName);
 
 	AddPatternMontage();
 
@@ -76,7 +81,7 @@ void ALastBossCharacter::AddPatternMontage()
 void ALastBossCharacter::RandomPatternPlay()
 {
 	int32 Index = FMath::RandRange(1, PhaseOnePatterns.Num());
-	if (Phase == 1)			// 페이즈 1 몽타주 출력
+	if (Phase == 1)			
 	{
 		if (PhaseOnePatterns.Num() == 0)
 		{
@@ -84,12 +89,13 @@ void ALastBossCharacter::RandomPatternPlay()
 			return;
 		}
 
+		// 페이즈 1 몽타주 출력
 		if (PhaseOnePatterns.IsValidIndex(Index) && PhaseOnePatterns[Index])
 		{
 			PlayAnimMontage(PhaseOnePatterns[Index]);
 		}
 	}
-	else if (Phase == 2)	// 페이즈 2 몽타주 출력
+	else if (Phase == 2)	
 	{
 		if (PhaseOnePatterns.Num() == 0)
 		{
@@ -97,6 +103,7 @@ void ALastBossCharacter::RandomPatternPlay()
 			return;
 		}
 
+		// 페이즈 2 몽타주 출력
 		if (PhaseTwoPatterns.IsValidIndex(Index) && PhaseTwoPatterns[Index])
 		{
 			PlayAnimMontage(PhaseTwoPatterns[Index]);

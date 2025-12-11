@@ -15,16 +15,35 @@ void UAnimNotifyStateApplyDamage::NotifyBegin(USkeletalMeshComponent* MeshComp, 
 	}
 	if (LastBoss.IsValid())
 	{
-		if (bCanAttack == true)
+		if (Projectile)
 		{
-			LastBoss->ApplyDamage(LastBoss->StatComponent->PhyAtt);
-			bCanAttack = false;
+			DoSpawnProjectile(Projectile);
 		}
 	}
 }
 
 void UAnimNotifyStateApplyDamage::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
-	bCanAttack = true;
+	// 스폰된 Projectile 제거
+	if (SpawnedProjectile.IsValid())
+	{
+		SpawnedProjectile->Destroy();
+		SpawnedProjectile = nullptr;
+	}
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
+}
+
+void UAnimNotifyStateApplyDamage::DoSpawnProjectile(TSubclassOf<AActor> InSpawnActor)
+{
+	if (LastBoss.IsValid() && InSpawnActor)
+	{
+		USceneComponent* SpawnComp = LastBoss->FindComponentByClass<USceneComponent>();
+		UWorld* World = LastBoss->GetWorld();
+		if (SpawnComp && World)
+		{
+			FTransform SpawnTransform = SpawnComp->GetComponentTransform();
+			AActor* SpawnedActor = World->SpawnActor<AActor>(InSpawnActor, SpawnTransform);
+			SpawnedProjectile = SpawnedActor;
+		}
+	}
 }
