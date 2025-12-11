@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "BossBase.generated.h"
 
+// 보스 상태
 UENUM(BlueprintType)
 enum class EBossState : uint8
 {
@@ -16,10 +17,19 @@ enum class EBossState : uint8
 	Dead        	UMETA(DisplayName = "Dead"),
 };
 
+// 보스 공격 타입
+UENUM(BlueprintType)
+enum class EBossAttackType : uint8
+{
+	Melee	UMETA(DisplayName = "Melee"),
+	Ranged	UMETA(DisplayName = "Ranged")
+};
+
+
 // 보스가 데미지를 받았을 때
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnBossDamaged,
-	float, CurrentHP,  
+	float, CurrentHP,
 	float, MaxHP
 );
 
@@ -42,6 +52,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	int32, NewPhase,
 	int32, OldPhase
 );
+
 
 UCLASS()
 class PROJECT_REQUIEM_API ABossBase : public ACharacter
@@ -78,6 +89,8 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -119,6 +132,31 @@ protected:
 	float MeleeAttackInterval = 1.5f;
 
 	float TimeSinceLastMeleeAttack = 0.0f;
+
+	// 원거리 공격 사용 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	bool bUseRangedAttack = false;
+
+	// 원거리 공격 가능한 최대 거리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	float RangedAttackRange = 800.0f;
+
+	// 원거리 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	float RangedAttackInterval = 3.0f;
+
+	float TimeSinceLastRangedAttack = 0.0f;
+
+	// 발사체 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	TSubclassOf<AActor> RangedProjectileClass;
+
+	// 원거리 공격 데미지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	float RangedDamage = 20.0f;
+
+	// 발사 함수
+	void PerformRangedAttack();
 
 
 	// 델리게이트

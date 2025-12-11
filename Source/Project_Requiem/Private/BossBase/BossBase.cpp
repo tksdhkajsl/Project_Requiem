@@ -7,6 +7,26 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
 
+// Called every frame
+void ABossBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 공격 쿨타임 누적
+	TimeSinceLastMeleeAttack += DeltaTime;
+	TimeSinceLastRangedAttack += DeltaTime;
+
+	UpdateState(DeltaTime);
+
+}
+
+// Called to bind functionality to input
+void ABossBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+}
+
 // Sets default values
 ABossBase::ABossBase()
 {
@@ -48,24 +68,7 @@ void ABossBase::BeginPlay()
 
 }
 
-// Called every frame
-void ABossBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-	// 공격 쿨타임 누적
-	TimeSinceLastMeleeAttack += DeltaTime;
-
-	UpdateState(DeltaTime);
-
-}
-
-// Called to bind functionality to input
-void ABossBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
 
 void ABossBase::SetBossState(EBossState NewState)
 {
@@ -245,12 +248,27 @@ void ABossBase::UpdateAttack(float DeltaTime)
 	const FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, 10.0f);
 	SetActorRotation(NewRot);
 
-	// 공격 쿨타임 체크
-	if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
+	// 공격 타입 결정
+	if (DistanceToTarget <= MeleeAttackRange)
 	{
-		PerformMeleeAttack();
-		TimeSinceLastMeleeAttack = 0.0f;
+		// 근접 공격
+		if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
+		{
+			PerformMeleeAttack();
+			TimeSinceLastMeleeAttack = 0.0f;
+		}
 	}
+	else if(bUseRangedAttack && DistanceToTarget <= RangedAttackRange)
+	{
+		// 원거리 공격
+		if (TimeSinceLastRangedAttack >= RangedAttackInterval)
+		{
+			PerformRangedAttack();
+			TimeSinceLastRangedAttack = 0.0f;
+		}
+	}
+
+	
 
 }
 
@@ -394,4 +412,32 @@ void ABossBase::PerformMeleeAttack()
 		nullptr			// 데미지 타입
 	);
 
+}
+
+// 원거리 공격 수행
+void ABossBase::PerformRangedAttack()
+{
+	if (!bUseRangedAttack || !TargetCharacter)
+	{
+		return;
+	}
+
+	if (!RangedProjectileClass)
+	{
+		return;
+	}
+
+	const FVector MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
+	const FRotator MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	AActor* Projectile = GetWorld()->SpawnActor<AActor>(
+		RangedProjectileClass,
+		MuzzleLocation,
+		MuzzleRotation,
+		SpawnParams
+	);
 }
