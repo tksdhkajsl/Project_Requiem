@@ -40,5 +40,16 @@ protected:
 	TObjectPtr<class UCameraComponent> PlayerCamera = nullptr;
 
 
+	// 달리기 속도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")
+	float SprintSpeed = 1200.0f;
+	// 걷기 속도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")
+	float WalkSpeed = 600.0f;
+
+	// 플레이어가 뛰고 있는 중인지 표시 해놓은 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player|State")
+	bool bIsSprint = false;
+
 #pragma endregion
 };

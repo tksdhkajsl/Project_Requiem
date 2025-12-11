@@ -39,7 +39,10 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		}
 	}
 
-	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
+	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (EIC) 
+	{
 		UInputAction* MoveAction = InputConfig->GetAction(EHumanoidInput::Move);
 		if (MoveAction) EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
 
@@ -105,9 +108,13 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 }
 void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
 {
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+	bIsSprint = true;
 }
 void APlayerCharacter::SetWalkMode(const FInputActionValue& Value)
 {
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	bIsSprint = false;
 }
 void APlayerCharacter::ViewStat()
 {
