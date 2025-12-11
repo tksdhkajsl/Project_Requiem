@@ -3,7 +3,7 @@
 #include "Components/TextBlock.h"
 
 // ========================================================
-// ¾ð¸®¾ó ±âº»»ý¼º
+// ï¿½ð¸®¾ï¿½ ï¿½âº»ï¿½ï¿½ï¿½ï¿½
 // ========================================================
 void UPRHUDBossWidget::NativeConstruct()
 {
@@ -11,7 +11,7 @@ void UPRHUDBossWidget::NativeConstruct()
     if (!StatName)  UE_LOG(LogTemp, Error, TEXT("StatName (TextBlock) is not bound in UMG!"));
 }
 // ========================================================
-// UI º¯°æ¿ë
+// UI ï¿½ï¿½ï¿½ï¿½ï¿½
 // ========================================================
 void UPRHUDBossWidget::SetStatValue(float CurrentValue, float MaxValue)
 {

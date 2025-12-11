@@ -217,7 +217,7 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
 
 	// 브로드캐스트(현재HP, 최대HP, 받은 데미지)
-	OnBossDamaged.Broadcast(CurrentHP, MaxHP, ActualDamage);
+	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
 	if (CurrentHP <= 0.0f)
 	{

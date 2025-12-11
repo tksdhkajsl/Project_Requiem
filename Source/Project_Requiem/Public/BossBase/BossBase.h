@@ -17,11 +17,10 @@ enum class EBossState : uint8
 };
 
 // 보스가 데미지를 받았을 때
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnBossDamaged,
-	float, CurrentHP,
-	float, MaxHP,
-	float, DamageAmount
+	float, CurrentHP,  
+	float, MaxHP
 );
 
 // 보스가 죽었을 때
