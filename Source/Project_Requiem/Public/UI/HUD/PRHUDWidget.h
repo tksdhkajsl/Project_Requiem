@@ -48,11 +48,15 @@ public:
     /// Todo : 보스 캐릭터 확정시 만들어야 함.
 #pragma region 보스 HP바 갱신
 public:
+    UFUNCTION()
+    void ShowBossHPBar(bool bShow);
+    UFUNCTION(BlueprintCallable, Category = "Boss")
+    void SetBossName(const FText& Name);
     // 델리게이트용 스탯바 업데이트 함수
     UFUNCTION()
     void HandleBossStatChanged(EFullStats StatType, float CurrValue, float MaxValue);
     // Boss HP바 업데이트하는 함수
-    UFUNCTION(BlueprintCallable, Category = "HUD Control")
+    UFUNCTION(Category = "HUD Control")
     void UpdateBossHPBar(float CurrentValue, float MaxValue);
 
     // BarHP (HP 상태 바)
