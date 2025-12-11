@@ -14,6 +14,7 @@ void UAnimNotifyState_Invincibility::NotifyBegin(USkeletalMeshComponent* MeshCom
 
 		if (Player)
 		{
+			UE_LOG(LogTemp, Log, TEXT("무적 : true"));
 			// 무적 상태 켜기
 			Player->SetInvincible(true);
 		}
@@ -31,6 +32,7 @@ void UAnimNotifyState_Invincibility::NotifyEnd(USkeletalMeshComponent* MeshComp,
 
 		if (Player)
 		{
+			UE_LOG(LogTemp, Log, TEXT("무적 : false"));
 			// 무적 상태 끄기
 			Player->SetInvincible(false);
 		}
