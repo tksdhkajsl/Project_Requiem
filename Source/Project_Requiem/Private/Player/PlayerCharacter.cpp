@@ -47,12 +47,19 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
 
 		UInputAction* RollAction = InputConfig->GetAction(EHumanoidInput::Roll);
-		if (RollAction) EIC->BindAction(RollAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+		if (RollAction) EIC->BindAction(RollAction, ETriggerEvent::Triggered, this, &ThisClass::Roll);
+
+		UInputAction* SprintAction = InputConfig->GetAction(EHumanoidInput::Sprint);
+		if (SprintAction)
+		{
+			// 눌렀을 때 (Started) -> 달리기 모드
+			EIC->BindAction(SprintAction, ETriggerEvent::Started, this, &APlayerCharacter::SetSprintMode);
+
+			// 손을 뗐을 때 (Completed) -> 걷기 모드
+			EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &APlayerCharacter::SetWalkMode);
+		}
 
 		/*UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
-
-		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
 		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
 
 		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
@@ -92,6 +99,15 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 		//AddControllerYawInput(LookAxisVector.X * BaseTurnRate * GetWorld()->GetDeltaSeconds()); // 이 경우 BaseTurnRate는 스케일이 아닌 'Rate'로 사용됨
 		//AddControllerPitchInput(LookAxisVector.Y * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 	}
+}
+void APlayerCharacter::Roll(const FInputActionValue& Value)
+{
+}
+void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
+{
+}
+void APlayerCharacter::SetWalkMode(const FInputActionValue& Value)
+{
 }
 void APlayerCharacter::ViewStat()
 {

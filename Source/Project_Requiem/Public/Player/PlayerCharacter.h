@@ -28,6 +28,9 @@ public:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void Roll(const FInputActionValue& Value);
+	void SetSprintMode(const FInputActionValue& Value);
+	void SetWalkMode(const FInputActionValue& Value);
 	void ViewStat();
 
 protected:
