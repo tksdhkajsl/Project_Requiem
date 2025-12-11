@@ -25,7 +25,7 @@ protected:
 		PC->PushDownKeyboard1~3();	 // 키 바인딩해야함
 		// 또는
 		if (APRPlayerController* PC = GetController<APRPlayerController>()) {
-		PC->PushDownKeyboard1~4(int32 포션갯수);	 // 키 바인딩해야함
+		PC->PushDownKeyboard4(int32 포션갯수);	 // 키 바인딩해야함
 	*/
 #pragma region HUD 위젯 클래스
 public:
@@ -37,16 +37,16 @@ public:
 	TObjectPtr<UPRHUDWidget> PlayerHUD;
 
 	/** 1번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard1();
 	/** 2번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard2();
 	/** 3번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard3();
 	/** 포션 용 키 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard4(int32 PotionNum);
 #pragma endregion
 
