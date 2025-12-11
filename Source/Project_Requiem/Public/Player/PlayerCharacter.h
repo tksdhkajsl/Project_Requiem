@@ -38,6 +38,11 @@ public:
 
 #pragma endregion
 
+public:
+	inline void SetInvincible(bool bNewState) { bIsInvincible = bNewState; }
+
+	bool GetInvincible() const { return bIsInvincible; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
 	TObjectPtr<class USpringArmComponent> SpringArm = nullptr;
@@ -60,7 +65,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player|State")
 	bool bIsSprint = false;
 
-
+	// 실제 무적 상태를 저장할 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|State")
+	bool bIsInvincible = false;
 
 private:
 	UPROPERTY()
