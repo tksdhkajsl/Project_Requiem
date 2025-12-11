@@ -11,7 +11,10 @@ ABossBase::ABossBase()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->MaxWalkSpeed = WalkSpeed;
+	}
 }
 
 // Called when the game starts or when spawned
@@ -19,16 +22,17 @@ void ABossBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CurrentHP = MaxHP;
+
 	// 플레이어 캐릭터 캐시
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
 	TargetCharacter = Cast<ACharacter>(PlayerPawn);
 
-	if (!TargetCharacter)
+	// 이동 속도 적용
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BossBase: TargetCharacter not found!"));
+		MoveComp->MaxWalkSpeed = WalkSpeed;
 	}
-
-	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 
 	// 전투 시작과 동시에 바로 추적 시작
 	if (bAutoStartChase && TargetCharacter)
@@ -47,6 +51,9 @@ void ABossBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 공격 쿨타임 누적
+	TimeSinceLastMeleeAttack += DeltaTime;
+
 	UpdateState(DeltaTime);
 
 }
@@ -64,7 +71,11 @@ void ABossBase::SetBossState(EBossState NewState)
 		return;
 	}
 
+	EBossState OldState = CurrentState;
 	CurrentState = NewState;
+
+	// 상태 변경 이벤트 브로드캐스트
+	OnBossStateChanged.Broadcast(NewState, OldState);
 }
 
 void ABossBase::UpdateState(float DeltaTime)
@@ -77,6 +88,10 @@ void ABossBase::UpdateState(float DeltaTime)
 
 	case EBossState::Chase:
 		UpdateChase(DeltaTime);
+		break;
+
+	case EBossState::Attack:
+		UpdateAttack(DeltaTime);
 		break;
 
 	case EBossState::PhaseChange:
@@ -94,7 +109,7 @@ void ABossBase::UpdateState(float DeltaTime)
 
 void ABossBase::UpdateIdle(float DeltaTime)
 {
-	// 등장 모션 , 포즈 유지 등
+	// 등장 모션 , 포즈 유지
 }
 
 void ABossBase::UpdateChase(float DeltaTime)
@@ -109,14 +124,22 @@ void ABossBase::UpdateChase(float DeltaTime)
 	const FVector TargetLocation = TargetCharacter->GetActorLocation();
 
 	FVector ToTarget = TargetLocation - BossLocation;
-	ToTarget.Z = 0.0f;	//	평면 기준
+	ToTarget.Z = 0.0f;	
 
 	const float DistanceToTarget = ToTarget.Length();
 
-	// 너무 가까우면 멈춤
+	
+
+	// 공격 범위 이하면 공격 상태로 전환
+	if (DistanceToTarget <= MeleeAttackRange)
+	{
+		SetBossState(EBossState::Attack);
+		return;
+	}
+
+	// 너무 가까우면 멈추기만 하고 chase 유지
 	if (DistanceToTarget <= StoppingDistance)
 	{
-		// 여기서 나중에 공격으로 전환
 		return;
 	}
 
@@ -133,8 +156,43 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 }
 
+
 void ABossBase::UpdateAttack(float DeltaTime)
 {
+	if (!TargetCharacter)
+	{
+		SetBossState(EBossState::Idle);
+		return;
+	}
+
+	const FVector BossLocation = GetActorLocation();
+	const FVector TargetLocation = TargetCharacter->GetActorLocation();
+
+	FVector ToTarget = TargetLocation - BossLocation;
+	ToTarget.Z = 0.0f;
+
+	const float DistanceToTarget = ToTarget.Length();
+
+	// 공격 사거리 밖으로 나가면 다시 쫓기
+	if (DistanceToTarget > MeleeAttackRange)
+	{
+		SetBossState(EBossState::Chase);
+		return;
+	}
+
+	// 타겟 바라보기
+	ToTarget.Normalize();
+	const FRotator TargetRot = ToTarget.Rotation();
+	const FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, 10.0f);
+	SetActorRotation(NewRot);
+
+	// 공격 쿨타임 체크
+	if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
+	{
+		PerformMeleeAttack();
+		TimeSinceLastMeleeAttack = 0.0f;
+	}
+
 }
 
 void ABossBase::UpdatePhaseChange(float DeltaTime)
@@ -145,4 +203,64 @@ void ABossBase::UpdateDead(float DeltaTime)
 {
 }
 
+// 데미지 받기
+float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
+	if (ActualDamage <= 0.0f || CurrentState == EBossState::Dead)
+	{
+		return 0.0f;
+	}
+
+	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
+
+	// 브로드캐스트(현재HP, 최대HP, 받은 데미지)
+	OnBossDamaged.Broadcast(CurrentHP, MaxHP, ActualDamage);
+
+	if (CurrentHP <= 0.0f)
+	{
+		SetBossState(EBossState::Dead);
+
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->StopMovementImmediately();
+		}
+
+		// 브로드캐스트 EXP
+		OnBossDead.Broadcast(EXP);
+	}
+
+	return ActualDamage;
+
+}
+
+void ABossBase::PerformMeleeAttack()
+{
+	if (CurrentState == EBossState::Dead)
+	{
+		return;
+	}
+
+	if (!TargetCharacter)
+	{
+		return;
+	}
+
+	const float Distance = FVector::Dist2D(GetActorLocation(), TargetCharacter->GetActorLocation());
+	if (Distance > MeleeAttackRange)
+	{
+		return;
+	}
+
+	AController* BossController = GetController();
+
+	UGameplayStatics::ApplyDamage(
+		TargetCharacter,
+		MeleeDamage,	// 데미지 양
+		BossController,
+		this,
+		nullptr			// 데미지 타입
+	);
+
+}
