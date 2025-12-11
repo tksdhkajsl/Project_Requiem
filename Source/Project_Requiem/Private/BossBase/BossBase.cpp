@@ -231,6 +231,8 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		// 브로드캐스트 EXP
 		OnBossDead.Broadcast(EXP);
 
+		return ActualDamage;
+
 	}
 
 
@@ -255,7 +257,7 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 	}
 
 
-		return ActualDamage;
+	return ActualDamage;
 
 
 
