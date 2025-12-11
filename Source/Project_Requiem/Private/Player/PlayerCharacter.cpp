@@ -43,12 +43,15 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 	if (EIC) 
 	{
+		// 기본 이동 입력
 		UInputAction* MoveAction = InputConfig->GetAction(EHumanoidInput::Move);
 		if (MoveAction) EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
 
+		// 화면 회전 입력
 		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
 		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
 
+		// 구르기(회피) 입력
 		UInputAction* RollAction = InputConfig->GetAction(EHumanoidInput::Roll);
 		if (RollAction) EIC->BindAction(RollAction, ETriggerEvent::Triggered, this, &ThisClass::Roll);
 
@@ -76,6 +79,16 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	}
 }
 
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetMesh())
+	{
+		AnimInstance = GetMesh()->GetAnimInstance();	// ABP 객체 가져오기		
+	}
+}
+
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -94,7 +107,8 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr) {
+	if (Controller != nullptr) 
+	{
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 
@@ -105,6 +119,20 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 }
 void APlayerCharacter::Roll(const FInputActionValue& Value)
 {
+	if (AnimInstance.IsValid() && !GetController()->IsMoveInputIgnored())
+	{
+
+		// && Resource->HasEnoughStamina(RollStaminaCost)
+		if (!AnimInstance->IsAnyMontagePlaying())	// 몽타주 재생중이 아니면 작동
+		{
+			if (!GetLastMovementInputVector().IsNearlyZero())	// 입력을 하는 중에만 즉시 회전
+			{
+				SetActorRotation(GetLastMovementInputVector().Rotation());	// 마지막 입력 방향으로 즉시 회전 시키기
+			}
+			//Resource->AddStamina(-RollStaminaCost);	// 스태미너 감소
+			PlayAnimMontage(RollMontage);
+		}
+	}
 }
 void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
 {
