@@ -9,8 +9,34 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
+<<<<<<< HEAD
+<<<<<<< HEAD
+				"Engine"
+			]
+		},
+		{
+			"Name": "DataInfo",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"CoreUObject"
+			]
+		},
+		{
+			"Name": "ComponentSystems",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+=======
 				"Engine",
 				"AIModule"
+>>>>>>> ee610a5572069883d1f311006ec93c82aedad419
+=======
+				"Engine",
+				"AIModule"
+>>>>>>> ee610a5572069883d1f311006ec93c82aedad419
 			]
 		}
 	],
