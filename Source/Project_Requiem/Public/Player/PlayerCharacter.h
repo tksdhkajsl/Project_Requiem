@@ -14,6 +14,11 @@ class PROJECT_REQUIEM_API APlayerCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 	
+public:
+	APlayerCharacter();
+
+public:
+
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 #pragma region Input
@@ -24,5 +29,13 @@ public:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void ViewStat();
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
+	TObjectPtr<class USpringArmComponent> SpringArm = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
+	TObjectPtr<class UCameraComponent> PlayerCamera = nullptr;
+
+
 #pragma endregion
 };

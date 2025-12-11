@@ -3,8 +3,28 @@
 #pragma region Input
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Config/InputConfig.h"
 #pragma endregion
+
+APlayerCharacter::APlayerCharacter()
+{
+	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
+	SpringArm->SetupAttachment(RootComponent);
+	SpringArm->TargetArmLength = 350.0f;
+	SpringArm->SocketOffset = FVector(0, 0, 250);
+	SpringArm->bUsePawnControlRotation = true;	// 스프링암의 회전을 컨트롤러에 맞춤
+
+	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("PlayerCamera"));
+	PlayerCamera->SetupAttachment(SpringArm);
+	PlayerCamera->SetRelativeRotation(FRotator(-20.0f, 0.0f, 0.0f));
+
+	bUseControllerRotationYaw = false;	// 컨트롤러의 Yaw 회전 사용 안함
+	GetCharacterMovement()->bOrientRotationToMovement = true;	// 이동 방향으로 캐릭터 회전
+	GetCharacterMovement()->RotationRate = FRotator(0, 360, 0);
+}
 
 // ========================================================
 // 언리얼 기본 생성 및 초기화
@@ -25,6 +45,21 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
 		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+
+		UInputAction* RollAction = InputConfig->GetAction(EHumanoidInput::Roll);
+		if (RollAction) EIC->BindAction(RollAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+
+		/*UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
+		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+
+		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
+		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+
+		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
+		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+
+		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
+		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);*/
 
 		UInputAction* StatAction = InputConfig->GetAction(EHumanoidInput::Stat);
 		if (StatAction) EIC->BindAction(StatAction, ETriggerEvent::Completed, this, &ThisClass::ViewStat);
