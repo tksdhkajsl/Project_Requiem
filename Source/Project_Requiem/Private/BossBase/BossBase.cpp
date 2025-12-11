@@ -2,6 +2,7 @@
 
 
 #include "Bossbase/BossBase.h"
+#include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
@@ -65,6 +66,7 @@ void ABossBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 }
+
 void ABossBase::SetBossState(EBossState NewState)
 {
 	if (CurrentState == NewState)
@@ -75,8 +77,64 @@ void ABossBase::SetBossState(EBossState NewState)
 	EBossState OldState = CurrentState;
 	CurrentState = NewState;
 
+	switch (CurrentState)
+	{
+	case EBossState::Dead:
+	{
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->StopMovementImmediately();
+		}
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		// 죽음 몽타주 재생
+		if (DeathMontage)
+		{
+			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+			{
+				AnimInstance->Montage_Play(DeathMontage);
+			}
+		}
+
+		// 일정 시간 뒤 destroy
+		FTimerHandle DestroyTimerHandle;
+		GetWorldTimerManager().SetTimer(
+			DestroyTimerHandle,
+			this,
+			&ABossBase::K2_DestroyActor,
+			5.0f, false
+		);
+	}
+	break;
+
+	case EBossState::PhaseChange:
+	{
+		// 페이즈 변경 몽타주 재생
+		if (PhaseChangeMontage)
+		{
+			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+			{
+				AnimInstance->Montage_Play(PhaseChangeMontage);
+			}
+		}
+
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->StopMovementImmediately();
+			MoveComp->DisableMovement();
+		}
+
+	}
+	break;
+
+	default:
+		break;
+	}
+
 	// 상태 변경 이벤트 브로드캐스트
 	OnBossStateChanged.Broadcast(NewState, OldState);
+
 }
 
 void ABossBase::UpdateState(float DeltaTime)
@@ -285,6 +343,11 @@ void ABossBase::FinishPhaseChange()
 {
 	if (CurrentState == EBossState::PhaseChange)
 	{
+		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+		{
+			MoveComp->SetMovementMode(MOVE_Walking);
+		}
+
 		SetBossState(EBossState::Chase);
 	}
 }
