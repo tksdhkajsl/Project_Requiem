@@ -191,10 +191,11 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
+	// 공격 상태로 진입하는 거리
 	const float AttackEnterRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
 
 
-	// 공격 범위 이하면 공격 상태로 전환
+	// 공격 상태로 집입하는 거리 이하면 공격 상태로 전환
 	if (DistanceToTarget <= AttackEnterRange)
 	{
 		SetBossState(EBossState::Attack);
@@ -237,10 +238,11 @@ void ABossBase::UpdateAttack(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
+	// 공격 상태를 유지할 수 있는 최대 거리
 	const float AttackMaxRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
 
 
-	// 공격 사거리 밖으로 나가면 다시 쫓기
+	// 공격 상태를 유지할 수 있는 최대 거리 밖으로 나가면 다시 쫓기
 	if (DistanceToTarget > AttackMaxRange)
 	{
 		SetBossState(EBossState::Chase);
@@ -413,6 +415,9 @@ void ABossBase::PerformMeleeAttack()
 	{
 		return;
 	}
+
+	// 공격 중 정지
+	GetCharacterMovement()->StopMovementImmediately();
 
 	// 공격 몽타주 재생
 	if (MeleeAttackMontage)
