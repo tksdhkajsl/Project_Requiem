@@ -1,8 +1,10 @@
 #include "Core/PRPlayerController.h"
 #include "UI/HUD/PRHUDWidget.h"
+#include "UI/StatWidget/PRStatWidget.h"
 
 #include "Character/BaseCharacter.h"
 #include "Stats/StatComponent.h"
+#include "Components/SceneCaptureComponent2D.h"
 // ========================================================
 // 언리얼 기본 생성
 // ========================================================
@@ -15,6 +17,13 @@ void APRPlayerController::BeginPlay()
 		PlayerHUD = CreateWidget<UPRHUDWidget>(this, HUDWidgetClass);
 		if (PlayerHUD) {
 			PlayerHUD->AddToViewport();
+		}
+	}
+
+	if (StatWidgetClass) {
+		PlayerStatWidget = CreateWidget<UPRStatWidget>(this, StatWidgetClass);
+		if (!PlayerStatWidget) {
+			UE_LOG(LogTemp, Error, TEXT("void APRPlayerController::BeginPlay() : Not Binding HUDWidgetClass"));
 		}
 	}
 }
@@ -78,5 +87,62 @@ void APRPlayerController::HandleBossHPChanged(EFullStats StatType, float Curr, f
 			ActiveBoss->GetStatComponent()->OnRegenStatChanged.RemoveDynamic(this, &APRPlayerController::HandleBossHPChanged);
 		}
 		ActiveBoss = nullptr;
+	}
+}
+// ========================================================
+// 스탯 위젯 클래스
+// ========================================================
+void APRPlayerController::HandleStatInput()
+{
+	if (!StatWidgetClass) {
+		UE_LOG(LogTemp, Warning, TEXT("StatWidgetClass is not set in PlayerController Blueprint."));
+		return;
+	}
+
+	if (bIsStatWidgetOpen) { // 스탯창 닫는 로직
+		PlayerStatWidget->RemoveFromParent();
+		OnStatWindowClosed();
+		FInputModeGameOnly InputMode;
+		SetInputMode(InputMode);
+		bShowMouseCursor = false;
+		bIsStatWidgetOpen = false;
+	}
+	else {
+		APawn* PlayerPawn = GetPawn();
+		UStatComponent* PlayerStatComp = PlayerPawn ? Cast<ABaseCharacter>(PlayerPawn)->GetStatComponent() : nullptr;
+
+		if (PlayerStatComp) {
+			PlayerStatWidget->SetStatComponent(PlayerStatComp);
+		}
+		OnStatWindowOpened();
+		PlayerStatWidget->AddToViewport();
+		FInputModeGameAndUI InputMode;
+		SetInputMode(InputMode);
+		bShowMouseCursor = true;
+		bIsStatWidgetOpen = true;
+	}
+}
+void APRPlayerController::OnStatWindowOpened()
+{
+	APawn* PlayerPawn = GetPawn();
+	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
+
+	if (CaptureComp) {
+		CaptureComp->bCaptureEveryFrame = true;
+		CaptureComp->CaptureScene();
+
+		UE_LOG(LogTemp, Log, TEXT("Portrait Capture Started."));
+	}
+}
+void APRPlayerController::OnStatWindowClosed()
+{
+	APawn* PlayerPawn = GetPawn();
+	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
+
+	if (CaptureComp) {
+		CaptureComp->bCaptureEveryFrame = false;
+		UE_LOG(LogTemp, Log, TEXT("Portrait Capture Stopped."));
 	}
 }
