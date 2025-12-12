@@ -34,6 +34,7 @@ public:
 	void Roll(const FInputActionValue& Value);
 	void SetSprintMode(const FInputActionValue& Value);
 	void SetWalkMode(const FInputActionValue& Value);
+	void EquipWeapon(const FInputActionValue& Value);
 	void ViewStat();
 
 #pragma endregion

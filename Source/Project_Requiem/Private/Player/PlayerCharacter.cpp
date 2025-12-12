@@ -66,14 +66,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &APlayerCharacter::SetWalkMode);
 		}
 
-		/*UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
-
-		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
-
-		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);*/
+		// 무기 교체 입력 바인딩 (1, 2, 3번 키 통합)
+		UInputAction* EquipAction = InputConfig->GetAction(EHumanoidInput::EquipWeapon);
+		if (EquipAction)
+		{
+			// Triggered로 설정하면 키를 누르는 순간 실행됩니다.
+			EIC->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ThisClass::EquipWeapon);
+		}
 
 		UInputAction* StatAction = InputConfig->GetAction(EHumanoidInput::Stat);
 		if (StatAction) EIC->BindAction(StatAction, ETriggerEvent::Completed, this, &ThisClass::ViewStat);
@@ -144,6 +143,51 @@ void APlayerCharacter::SetWalkMode(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	bIsSprint = false;
+}
+void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
+{
+	// 1. 입력값 가져오기 (IMC 스칼라 값: 1.0, 2.0, 3.0)
+	float InputValue = Value.Get<float>();
+
+	// 2. 정수로 변환 (1, 2, 3)
+	int32 WeaponIndex = (int32)InputValue;
+
+	// 3. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
+	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
+
+	if (PC)
+	{
+		switch (WeaponIndex)
+		{
+		case 1:
+			// 1번 키: 한손검
+			// TODO: 실제 캐릭터의 무기 교체 로직 (예: 메시 변경)은 여기에 작성
+			// EquipOneHandedSword(); 
+
+			// HUD 업데이트 (컨트롤러 함수 호출)
+			PC->PushDownKeyboard1();
+			break;
+
+		case 2:
+			// 2번 키: 양손검
+			// EquipTwoHandedSword();
+
+			// HUD 업데이트
+			PC->PushDownKeyboard2();
+			break;
+
+		case 3:
+			// 3번 키: 쌍검
+			// EquipDualBlade();
+
+			// HUD 업데이트
+			PC->PushDownKeyboard3();
+			break;
+
+		default:
+			break;
+		}
+	}
 }
 void APlayerCharacter::ViewStat()
 {
