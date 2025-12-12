@@ -214,9 +214,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|Phase")
 	void FinishPhaseChange();
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
+	void ApplyMeleeDamage();
+
 // 애니메이션 몽타주
-
-
 protected:
 	// 근접 공격 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")

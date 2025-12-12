@@ -66,6 +66,7 @@ void ABossBase::BeginPlay()
 		SetBossState(EBossState::Idle);
 	}
 
+	
 }
 
 
@@ -194,7 +195,7 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 
 	// 공격 범위 이하면 공격 상태로 전환
-	if (DistanceToTarget <= MeleeAttackRange)
+	if (DistanceToTarget <= AttackEnterRange)
 	{
 		SetBossState(EBossState::Attack);
 		return;
@@ -240,7 +241,7 @@ void ABossBase::UpdateAttack(float DeltaTime)
 
 
 	// 공격 사거리 밖으로 나가면 다시 쫓기
-	if (DistanceToTarget > MeleeAttackRange)
+	if (DistanceToTarget > AttackMaxRange)
 	{
 		SetBossState(EBossState::Chase);
 		return;
@@ -374,6 +375,26 @@ void ABossBase::FinishPhaseChange()
 	}
 }
 
+// 근접 데미지 적용
+void ABossBase::ApplyMeleeDamage()
+{
+	if (CurrentState == EBossState::Dead) return;
+	if (!TargetCharacter) return;
+
+	const float Distance = FVector::Dist2D(GetActorLocation(), TargetCharacter->GetActorLocation());
+	if (Distance > MeleeAttackRange)	return;
+
+	AController* BossController = GetController();
+
+	UGameplayStatics::ApplyDamage(
+		TargetCharacter,
+		MeleeDamage,
+		BossController,
+		this,
+		nullptr
+	);
+}
+
 // 보스 근접 공격 수행
 void ABossBase::PerformMeleeAttack()
 {
@@ -404,17 +425,6 @@ void ABossBase::PerformMeleeAttack()
 			}
 		}
 	}
-
-	// 데미지 처리
-	AController* BossController = GetController();
-
-	UGameplayStatics::ApplyDamage(
-		TargetCharacter,
-		MeleeDamage,	// 데미지 양
-		BossController,
-		this,
-		nullptr			// 데미지 타입
-	);
 
 }
 
