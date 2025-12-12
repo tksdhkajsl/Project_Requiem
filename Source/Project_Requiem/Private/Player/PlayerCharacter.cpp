@@ -25,6 +25,8 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationYaw = false;	// 컨트롤러의 Yaw 회전 사용 안함
 	GetCharacterMovement()->bOrientRotationToMovement = true;	// 이동 방향으로 캐릭터 회전
 	GetCharacterMovement()->RotationRate = FRotator(0, 360, 0);
+
+	WeaponManager = CreateDefaultSubobject<UWeaponManagerComponent>(TEXT("WeaponManager"));
 }
 
 // ========================================================

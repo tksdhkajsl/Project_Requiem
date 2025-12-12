@@ -49,6 +49,8 @@ protected:
 	TObjectPtr<class USpringArmComponent> SpringArm = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
 	TObjectPtr<class UCameraComponent> PlayerCamera = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Weapon")
+	TObjectPtr<class UWeaponManagerComponent> WeaponManager = nullptr;
 
 	// 구르기 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation|Montage")
