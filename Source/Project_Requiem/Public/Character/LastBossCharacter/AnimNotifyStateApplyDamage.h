@@ -31,8 +31,11 @@ public:
 
 protected:
 	// 스폰할 액터
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SpawnActor")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting|SpawnActor")
 	TSubclassOf<AActor> Projectile = nullptr;
+
+	UPROPERTY(EditInstanceOnly, Category = "Setting|SpawnComponentName")
+	FName SpawnComponentName = NAME_None;
 
 private:
 	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;

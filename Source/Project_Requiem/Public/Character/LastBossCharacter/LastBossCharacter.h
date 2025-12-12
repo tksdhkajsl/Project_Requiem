@@ -46,6 +46,11 @@ public:
 	// 경험치 줄 때
 	void ApplyExp(float ExpAmount);
 
+	// Getter
+	// 투사체 스폰 위치 외부 접근용
+	UFUNCTION(BlueprintCallable)
+	inline class USceneComponent* GetSceneComponent() { return SpawnProjectileLocation.Get(); }
+
 
 protected:
 	// 보스 패턴 별 몽타주 추가 함수
@@ -56,7 +61,8 @@ protected:
 
 protected:
 	// 투사체 스폰 위치
-	TObjectPtr<class USceneComponent> SpawnProjectileLocation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<class USceneComponent> SpawnProjectileLocation = nullptr;;
 
 	// 보스 상태에 따라 실행될 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")

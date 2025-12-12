@@ -10,6 +10,7 @@ ALastBossCharacter::ALastBossCharacter()
 	PrimaryActorTick.bCanEverTick = false;
 
 	SpawnProjectileLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Projectile"));
+	SpawnProjectileLocation->SetupAttachment(RootComponent);
 }
 
 void ALastBossCharacter::BeginPlay()
