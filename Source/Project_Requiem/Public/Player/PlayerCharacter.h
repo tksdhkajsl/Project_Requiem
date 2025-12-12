@@ -56,6 +56,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation|Montage")
 	TObjectPtr<UAnimMontage> RollMontage = nullptr;
 
+	// 현재 손에 들고 있는 무기
+	UPROPERTY(VisibleInstanceOnly, Category = "Combat")
+	TObjectPtr<class AWeaponActor> CurrentWeapon = nullptr;
 
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")

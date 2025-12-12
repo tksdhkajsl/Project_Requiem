@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Weapons/WeaponManagerComponent.h"
 #include "Core/PRPlayerController.h"
 #include "Config/InputConfig.h"
 #pragma endregion
@@ -153,6 +154,8 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 
 	// 2. 정수로 변환 (1, 2, 3)
 	int32 WeaponIndex = (int32)InputValue;
+
+
 
 	// 3. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
 	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
