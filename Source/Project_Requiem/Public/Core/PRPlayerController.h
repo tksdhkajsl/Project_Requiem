@@ -31,16 +31,16 @@ public:
 	TObjectPtr<UPRHUDWidget> PlayerHUD;
 
 	/** 1번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard1();
 	/** 2번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard2();
 	/** 3번째 무기 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard3();
 	/** 포션 용 키 바인딩 */
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void PushDownKeyboard4(int32 PotionNum);
 #pragma endregion
 
