@@ -129,6 +129,11 @@ void ABossBase::SetBossState(EBossState NewState)
 			MoveComp->DisableMovement();
 		}
 
+		// 몽타주 없으면 페이즈 종료 처리
+		if (!PhaseChangeMontage)
+		{
+			FinishPhaseChange();
+		}
 	}
 	break;
 

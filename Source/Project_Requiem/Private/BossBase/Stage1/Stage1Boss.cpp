@@ -28,5 +28,9 @@ void AStage1Boss::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 {
 	Super::OnPhaseChanged_Implementation(NewPhase, OldPhase);
 
+	if (NewPhase == 2)
+	{
+		bUseRangedAttack = true;
+	}
 
 }
