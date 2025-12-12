@@ -20,7 +20,6 @@ void ALastBossCharacter::BeginPlay()
 	OnLastBossName.Broadcast(BossName);
 
 	AddPatternMontage();
-
 	PlayAnimMontage(SpawnMontage);
 }
 

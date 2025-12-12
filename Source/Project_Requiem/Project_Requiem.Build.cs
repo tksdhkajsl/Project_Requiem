@@ -9,7 +9,7 @@ public class Project_Requiem : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG",
-        "DataInfo", "ComponentSystems"});
+        "DataInfo", "ComponentSystems", "Niagara", "NiagaraCore"});
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
     }

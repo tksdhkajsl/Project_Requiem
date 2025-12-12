@@ -26,8 +26,11 @@ public:
 
 public:
 	// 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnApplyDamage OnApplyDamage;
+	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnApplyExp OnApplyExp;
+	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnLastBossName OnLastBossName;
 
 public:

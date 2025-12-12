@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Character/LastBossCharacter/AnimNotifyStateApplyDamage.h"
+#include "Character/LastBossCharacter/AnimNotifyState/AnimNotifyStateProjectileSpawn.h"
 #include "Character/LastBossCharacter/LastBossCharacter.h"
 #include "Stats/StatComponent.h"
 
-void UAnimNotifyStateApplyDamage::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
+void UAnimNotifyStateProjectileSpawn::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
@@ -22,7 +22,7 @@ void UAnimNotifyStateApplyDamage::NotifyBegin(USkeletalMeshComponent* MeshComp, 
 	}
 }
 
-void UAnimNotifyStateApplyDamage::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
+void UAnimNotifyStateProjectileSpawn::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
 	// 스폰된 Projectile 제거
 	if (SpawnedProjectile.IsValid())
@@ -34,7 +34,7 @@ void UAnimNotifyStateApplyDamage::NotifyEnd(USkeletalMeshComponent* MeshComp, UA
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 }
 
-void UAnimNotifyStateApplyDamage::DoSpawnProjectile(TSubclassOf<AActor> InSpawnActor)
+void UAnimNotifyStateProjectileSpawn::DoSpawnProjectile(TSubclassOf<AProjectileBase> InSpawnActor)
 {
 	// 유효성 검사
 	if (!LastBoss.IsValid() || !InSpawnActor)
@@ -50,15 +50,22 @@ void UAnimNotifyStateApplyDamage::DoSpawnProjectile(TSubclassOf<AActor> InSpawnA
 		return;
 	}
 
+	// 기존에 스폰된 액터가 있으면 제거(중복 스폰 방지)
+	if (SpawnedProjectile.IsValid())
+	{
+		SpawnedProjectile->Destroy();
+		SpawnedProjectile = nullptr;
+	}
+
 	// 컴포넌트 이름으로 씬 컴포넌트를 찾음
 	USceneComponent* SpawnComp = nullptr;
-	if (SpawnComponentName != NAME_None)
+	if (SpawnSceneComponentName != NAME_None)
 	{
 		TArray<USceneComponent*> Components;
 		LastBoss->GetComponents<USceneComponent>(Components);
 		for (USceneComponent* Comp : Components)
 		{
-			if (Comp && Comp->GetFName() == SpawnComponentName)
+			if (Comp && Comp->GetFName() == SpawnSceneComponentName)
 			{
 				SpawnComp = Comp;
 				break;
@@ -69,10 +76,12 @@ void UAnimNotifyStateApplyDamage::DoSpawnProjectile(TSubclassOf<AActor> InSpawnA
 	// 컴포넌트를 못찾았을 경우 폴백
 	if (!SpawnComp)
 	{
+		// LastBossCharacter의 기본 씬 컴포넌트 연결
 		SpawnComp = LastBoss->GetSceneComponent();
 	}
 	if (!SpawnComp)
 	{
+		// LastBossCharacter의 루트 컴포넌트 연결
 		SpawnComp = LastBoss->GetRootComponent();
 	}
 	// 유효성 검사
@@ -99,7 +108,9 @@ void UAnimNotifyStateApplyDamage::DoSpawnProjectile(TSubclassOf<AActor> InSpawnA
 
 		// 스폰된 액터 저장
 		if (Spawned)
-			UE_LOG(LogTemp, Log, TEXT("스폰되었습니다"))
+		{
+			UE_LOG(LogTemp, Log, TEXT("스폰되었습니다"));
 			SpawnedProjectile = Spawned;
+		}
 	}
 }
