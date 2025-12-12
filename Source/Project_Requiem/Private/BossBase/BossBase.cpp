@@ -190,7 +190,8 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
-	
+	const float AttackEnterRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
+
 
 	// 공격 범위 이하면 공격 상태로 전환
 	if (DistanceToTarget <= MeleeAttackRange)
@@ -234,6 +235,9 @@ void ABossBase::UpdateAttack(float DeltaTime)
 	ToTarget.Z = 0.0f;
 
 	const float DistanceToTarget = ToTarget.Length();
+
+	const float AttackMaxRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
+
 
 	// 공격 사거리 밖으로 나가면 다시 쫓기
 	if (DistanceToTarget > MeleeAttackRange)
