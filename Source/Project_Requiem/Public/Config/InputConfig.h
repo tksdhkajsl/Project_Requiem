@@ -9,7 +9,9 @@ enum class EHumanoidInput : uint8
 {
     Move,
     Look,
-    Jump,
+    Roll,
+    Attack,
+    HeavyAttack,
     Sprint,
     Inventory,
     Interact,

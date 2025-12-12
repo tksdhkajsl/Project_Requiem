@@ -24,6 +24,9 @@ protected:
 
 #pragma region 스탯 컴포넌트 관련
 public:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "00_StatCompoent")
+    FText MonsterName;
+
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="00_StatCompoent")
@@ -33,7 +36,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStatComponent* StatComponent;
 #pragma endregion
-
 
 #pragma region 캐릭터 기본 함수들
 public:
