@@ -8,14 +8,14 @@
 #include "Engine/Texture2D.h"
 
 // ========================================================
-// ¾ğ¸®¾ó ±âº» »ı¼º ¹× ÃÊ±âÈ­
+// ì–¸ë¦¬ì–¼ ê¸°ë³¸ ìƒì„± ë° ì´ˆê¸°í™”
 // ========================================================
 void UPRHUDWidget::NativeConstruct()
 {
     Super::NativeConstruct();
     if (!BarHP || !BarST) UE_LOG(LogTemp, Warning, TEXT("PlayerHUD: Some UMG widgets failed to bind. Check names and 'Is Variable' settings!"));
 
-    // StatBarÀÇ ÃÊ±â »ö»ó ¹× ±ÛÀÚ ¼³Á¤ (ÀÌÈÄ·Î º¯°æ ¾ÈÇÔ)
+    // StatBarï¿½ï¿½ ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½Ä·ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     if (BarHP) {
         BarHP->SetBarColor(FLinearColor::Red);
         BarHP->SetStatName(FText::FromString(TEXT("HP")));
@@ -25,6 +25,7 @@ void UPRHUDWidget::NativeConstruct()
         BarST->SetStatName(FText::FromString(TEXT("ST")));
     }
     if (BossBarHP) {
+        BossBarHP->SetVisibility(ESlateVisibility::Hidden);
         BossBarHP->SetBarColor(FLinearColor::Red);
         BossBarHP->SetStatName(FText::FromString(TEXT("BossName")));
     }
@@ -44,10 +45,10 @@ void UPRHUDWidget::NativeConstruct()
 void UPRHUDWidget::BindToPawn(APawn* NewPawn)
 {
     if (UStatComponent* StatComp = NewPawn->FindComponentByClass<UStatComponent>()) {
-        // Áßº¹ ¹ÙÀÎµù ¹æÁö
+        // ìŠ¤íƒ¯ ë¦¬ì  ìš© ì œê±°
         StatComp->OnRegenStatChanged.RemoveDynamic(this, &UPRHUDWidget::HandleRegenStatChanged);
 
-        // ´Ù½Ã ¹ÙÀÎµù
+        // ìŠ¤íƒ¯ ë¦¬ì  ìš© ë‹¤ì‹œ ë¶™ì´ê¸°
         StatComp->OnRegenStatChanged.AddDynamic(this, &UPRHUDWidget::HandleRegenStatChanged);
     }
 }
@@ -56,7 +57,7 @@ void UPRHUDWidget::OnPawnChanged(APawn* NewPawn)
     if (NewPawn) BindToPawn(NewPawn);
 }
 // ========================================================
-// ¾ğ¸®¾ó ±âº» »ı¼º ¹× ÃÊ±âÈ­
+// ìŠ¤íƒ¯ ë°” ê°±ì‹ 
 // ========================================================
 void UPRHUDWidget::HandleRegenStatChanged(EFullStats StatType, float CurrValue, float MaxValue)
 {
@@ -69,7 +70,7 @@ void UPRHUDWidget::HandleRegenStatChanged(EFullStats StatType, float CurrValue, 
         break;
 
     default:
-        // ±âÅ¸ Ã³¸® (ÇÊ¿ä½Ã)
+        // ï¿½ï¿½Å¸ Ã³ï¿½ï¿½ (ï¿½Ê¿ï¿½ï¿½)
         break;
     }
 }
@@ -82,17 +83,36 @@ void UPRHUDWidget::UpdateSTBar(float CurrentValue, float MaxValue)
     if (BarST) BarST->SetStatValue(CurrentValue, MaxValue);
 }
 // ========================================================
-// º¸½º HP¹Ù °»½Å
+// ë³´ìŠ¤ HPë°” ê°±ì‹ 
 // ========================================================
+void UPRHUDWidget::ShowBossHPBar(bool bShow)
+{
+    if (!BossBarHP) return;
+    BossBarHP->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+}
+void UPRHUDWidget::SetBossName(const FText& Name)
+{
+    if (!BossBarHP) return;    
+    BossBarHP->SetStatName(Name);
+}
 void UPRHUDWidget::HandleBossStatChanged(EFullStats StatType, float CurrValue, float MaxValue)
 {
+    switch (StatType) {
+    case EFullStats::Health:
+        UpdateBossHPBar(CurrValue, MaxValue);
+        break;
+    default:
+        // HPë§Œ ê°±ì‹ í•¨
+        break;
+    }
+
 }
 void UPRHUDWidget::UpdateBossHPBar(float CurrentValue, float MaxValue)
 {
     if (BossBarHP) BossBarHP->SetStatValue(CurrentValue, MaxValue);
 }
 // ========================================================
-// ¹«±â ¾ÆÀÌÅÛ ½º¿Ò¿ë
+// ë¬´ê¸° ì•„ì´í…œ ìŠ¤ì™‘ìš©
 // ========================================================
 void UPRHUDWidget::UpdateWeaponSlot(int32 SlotIndex)
 {
@@ -113,7 +133,7 @@ void UPRHUDWidget::UpdateWeaponSlot(int32 SlotIndex)
 
 }
 // ========================================================
-// Æ÷¼Ç¿ë À§Á¬
+// í¬ì…˜ìš© ìœ„ì ¯
 // ========================================================
 void UPRHUDWidget::UpdatePotionNum(int32 ItemNum)
 {
