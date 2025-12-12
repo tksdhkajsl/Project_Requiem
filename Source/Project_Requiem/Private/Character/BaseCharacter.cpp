@@ -1,7 +1,6 @@
 ﻿#include "Character/BaseCharacter.h"
 
 #include "Stats/StatComponent.h"
-
 //---------------기본 생성-------------------
 ABaseCharacter::ABaseCharacter()
 {
