@@ -8,11 +8,29 @@ class UStatComponent;
 
 struct FOffspringData;
 
+#pragma region 캡쳐 컴포넌트 관련
+class USceneCaptureComponent2D;
+#pragma endregion
+
 UCLASS()
 class PROJECT_REQUIEM_API ABaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+#pragma region 캡쳐 컴포넌트 관련
+
+protected:
+    /** @brief 플레이어 초상화 생성을 위한 3D 캡처 카메라 */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Portrait")
+    TObjectPtr<USceneCaptureComponent2D> PortraitCaptureComponent;
+
+public:
+    // 캡처 컴포넌트를 외부에 노출하여 UMG에서 접근할 수 있도록 합니다.
+    FORCEINLINE USceneCaptureComponent2D* GetPortraitCaptureComponent() const { return PortraitCaptureComponent; }
+#pragma endregion
+
+	
+	
 #pragma region 기본 생성
 public:
 	ABaseCharacter();
