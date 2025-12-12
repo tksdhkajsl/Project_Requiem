@@ -2,6 +2,7 @@
 
 
 #include "Weapons/WeaponManagerComponent.h"
+#include "GameFramework/Character.h"
 
 // Sets default values for this component's properties
 UWeaponManagerComponent::UWeaponManagerComponent()
@@ -34,25 +35,29 @@ AWeaponActor* UWeaponManagerComponent::GetWeaponInstance(EWeaponCode InCode) con
 
 void UWeaponManagerComponent::SpawnWeaponInstances()
 {
-	// 주인이 없거나 월드가 없으면 중단
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (!OwnerCharacter || !GetWorld()) return;
+	if (!OwnerCharacter || !GetWorld() || !WeaponDataTable) return;
 
-	// 데이터베이스에 등록된 모든 무기를 순회하며 생성
-	for (const auto& Pair : WeaponDatabase)
+	// 1. 데이터 테이블의 모든 행(Row) 가져오기
+	FString ContextString; // 에러 로그용 문자열
+	TArray<FWeaponTableRow*> AllRows;
+	WeaponDataTable->GetAllRows<FWeaponTableRow>(ContextString, AllRows);
+
+	// 2. 테이블에 적힌 모든 무기를 하나씩 생성
+	for (FWeaponTableRow* Row : AllRows)
 	{
-		EWeaponCode Code = Pair.Key;
-		UWeaponDataAsset* Data = Pair.Value;
-
-		if (Data && Data->EquippedWeaponClass)
+		if (Row && Row->WeaponClass)
 		{
+			// 중복 생성 방지 (이미 맵에 있으면 패스)
+			if (WeaponInstances.Contains(Row->WeaponCode)) continue;
+
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = OwnerCharacter;
 			SpawnParams.Instigator = OwnerCharacter;
 
-			// 1. 무기 소환 (위치는 일단 캐릭터 위치)
+			// 무기 액터 소환!
 			AWeaponActor* NewWeapon = GetWorld()->SpawnActor<AWeaponActor>(
-				Data->EquippedWeaponClass,
+				Row->WeaponClass,
 				OwnerCharacter->GetActorLocation(),
 				OwnerCharacter->GetActorRotation(),
 				SpawnParams
@@ -60,13 +65,14 @@ void UWeaponManagerComponent::SpawnWeaponInstances()
 
 			if (NewWeapon)
 			{
-				// 2. 소환하자마자 일단 숨김 (장착하기 전까지는 안 보여야 함)
+				// 3. 일단 숨겨두기 (장착 전이니까)
 				NewWeapon->SetActorHiddenInGame(true);
-				NewWeapon->SetActorEnableCollision(false); // 충돌도 끔
-				NewWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("root")); // 임시로 붙여둠 (안보이게)
+				NewWeapon->SetActorEnableCollision(false);
+				// 캐릭터 루트에 임시로 붙여둠 (따라다니게)
+				NewWeapon->AttachToComponent(OwnerCharacter->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("root"));
 
-				// 3. 인스턴스 맵에 저장 (나중에 꺼내 쓰기 위해)
-				WeaponInstances.Add(Code, NewWeapon);
+				// 4. 창고(Map)에 저장
+				WeaponInstances.Add(Row->WeaponCode, NewWeapon);
 			}
 		}
 	}

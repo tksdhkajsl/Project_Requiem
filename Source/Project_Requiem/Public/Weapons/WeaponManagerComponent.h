@@ -6,7 +6,8 @@
 #include "Components/ActorComponent.h"
 #include "Common/CommonEnum.h"
 #include "Weapons/WeaponActor.h"
-#include "Data/WeaponDataAsset.h"
+#include "Engine/DataTable.h"
+#include "Data/WeaponDataTable.h"
 #include "WeaponManagerComponent.generated.h"
 
 
@@ -31,11 +32,11 @@ private:
 	void SpawnWeaponInstances();
 
 protected:
-	// [에디터 설정용] 무기 코드별 데이터 에셋 (블루프린트 클래스 정보 포함)
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon Database")
-	TMap<EWeaponCode, TObjectPtr<UWeaponDataAsset>> WeaponDatabase;
+	// 여기에 아까 만든 데이터 테이블(DT_WeaponData)을 넣을 겁니다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Database")
+	TObjectPtr<UDataTable> WeaponDataTable;
 
-	// [실제 게임용] 생성된 무기 액터들을 보관하는 창고
+	// 생성된 무기들을 보관하는 창고 (Key: 무기 종류, Value: 소환된 액터)
 	UPROPERTY(VisibleInstanceOnly, Category = "Weapon Instance")
 	TMap<EWeaponCode, TObjectPtr<AWeaponActor>> WeaponInstances;
 		

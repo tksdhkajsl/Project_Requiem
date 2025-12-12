@@ -50,11 +50,33 @@ AWeaponActor::AWeaponActor()
 void AWeaponActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	AdjustMeshToSocket(WeaponMesh);
+	AdjustMeshToSocket(LeftWeaponMesh);
 	
 }
 
 void AWeaponActor::OnWeaponBeginOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
+}
+
+void AWeaponActor::AdjustMeshToSocket(USkeletalMeshComponent* InMesh)
+{
+	// 1. 소켓 이름이 비어있거나, 메시가 없으면 패스
+	if (!InMesh || GripSocketName.IsNone()) return;
+
+	// 2. 해당 소켓이 있는지 확인
+	if (InMesh->DoesSocketExist(GripSocketName))
+	{
+		// 3. 소켓의 트랜스폼을 가져옴
+		FTransform SocketTransform = InMesh->GetSocketTransform(GripSocketName, RTS_Component);
+
+		// 4. 역행렬(반대 위치) 계산
+		FTransform InverseTransform = SocketTransform.Inverse();
+
+		// 5. 메시 위치를 조정해서 소켓이 (0,0,0)에 오게 만듦
+		InMesh->SetRelativeTransform(InverseTransform);
+	}
 }
 
 

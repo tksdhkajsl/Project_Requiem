@@ -17,6 +17,9 @@ public:
 	// Sets default values for this actor's properties
 	AWeaponActor();
 
+	// 메시 위치를 조정하는 내부 함수
+	void AdjustMeshToSocket(USkeletalMeshComponent* InMesh);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -58,6 +61,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	EWeaponCode WeaponID = EWeaponCode::OneHandedSword;
+
+	// 에디터에서 "손잡이"라고 적어줄 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Socket")
+	FName GripSocketName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	float Damage = 10.0f;
