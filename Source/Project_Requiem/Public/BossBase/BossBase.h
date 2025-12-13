@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "BossBase.generated.h"
 
+class ABossProjectile;
+
+
 // 보스 상태
 UENUM(BlueprintType)
 enum class EBossState : uint8
@@ -149,7 +152,7 @@ protected:
 
 	// 발사체 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
-	TSubclassOf<AActor> RangedProjectileClass;
+	TSubclassOf<ABossProjectile> RangedProjectileClass;
 
 	// 원거리 공격 데미지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")

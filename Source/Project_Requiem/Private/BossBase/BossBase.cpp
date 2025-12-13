@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
+#include "BossBase/Projectile/BossProjectile.h"
 
 // Called every frame
 void ABossBase::Tick(float DeltaTime)
@@ -441,6 +442,11 @@ void ABossBase::PerformMeleeAttack()
 // 원거리 공격 수행
 void ABossBase::PerformRangedAttack()
 {
+	if (CurrentState == EBossState::Dead)
+	{
+		return;
+	}
+
 	if (!bUseRangedAttack || !TargetCharacter)
 	{
 		return;
@@ -458,10 +464,18 @@ void ABossBase::PerformRangedAttack()
 	SpawnParams.Owner = this;
 	SpawnParams.Instigator = GetInstigator();
 
-	AActor* Projectile = GetWorld()->SpawnActor<AActor>(
+	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
 		RangedProjectileClass,
 		MuzzleLocation,
 		MuzzleRotation,
 		SpawnParams
 	);
+
+	if (!Projectile)
+	{
+		return;
+	}
+
+	AController* BossController = GetController();
+	Projectile->InitProjectile(RangedDamage, BossController);
 }
