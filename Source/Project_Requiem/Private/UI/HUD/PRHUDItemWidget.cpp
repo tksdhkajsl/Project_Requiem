@@ -4,7 +4,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // ========================================================
-// ¾ð¸®¾ó ±âº» »ý¼º ¹× ÃÊ±âÈ­
+// ï¿½ð¸®¾ï¿½ ï¿½âº» ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê±ï¿½È­
 // ========================================================
 void UPRHUDItemWidget::NativeConstruct()
 {
@@ -13,7 +13,7 @@ void UPRHUDItemWidget::NativeConstruct()
 	if (!ItemNum)   UE_LOG(LogTemp, Error, TEXT("ItemNum (TextBlock) is not bound in UMG!"));
 }
 // ========================================================
-// UI º¯°æ¿ë
+// UI ï¿½ï¿½ï¿½ï¿½ï¿½
 // ========================================================
 void UPRHUDItemWidget::ChangeItemImage(UTexture2D* NewTexture)
 {
