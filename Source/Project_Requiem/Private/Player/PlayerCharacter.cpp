@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Weapons/WeaponManagerComponent.h"
 #include "Core/PRPlayerController.h"
 #include "Config/InputConfig.h"
 #pragma endregion
@@ -25,6 +26,8 @@ APlayerCharacter::APlayerCharacter()
 	bUseControllerRotationYaw = false;	// 컨트롤러의 Yaw 회전 사용 안함
 	GetCharacterMovement()->bOrientRotationToMovement = true;	// 이동 방향으로 캐릭터 회전
 	GetCharacterMovement()->RotationRate = FRotator(0, 360, 0);
+
+	WeaponManager = CreateDefaultSubobject<UWeaponManagerComponent>(TEXT("WeaponManager"));
 }
 
 // ========================================================
@@ -66,14 +69,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			EIC->BindAction(SprintAction, ETriggerEvent::Completed, this, &APlayerCharacter::SetWalkMode);
 		}
 
-		/*UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
-
-		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
-
-		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);*/
+		// 무기 교체 입력 바인딩 (1, 2, 3번 키 통합)
+		UInputAction* EquipAction = InputConfig->GetAction(EHumanoidInput::EquipWeapon);
+		if (EquipAction)
+		{
+			// Triggered로 설정하면 키를 누르는 순간 실행됩니다.
+			EIC->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ThisClass::EquipWeapon);
+		}
 
 		UInputAction* StatAction = InputConfig->GetAction(EHumanoidInput::Stat);
 		if (StatAction) EIC->BindAction(StatAction, ETriggerEvent::Completed, this, &ThisClass::ViewStat);
@@ -144,6 +146,98 @@ void APlayerCharacter::SetWalkMode(const FInputActionValue& Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	bIsSprint = false;
+}
+void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
+{
+	// 1. 입력값 가져오기 (IMC 스칼라 값: 1.0, 2.0, 3.0)
+	float InputValue = Value.Get<float>();
+
+	// 2. 정수로 변환 (1, 2, 3)
+	int32 WeaponIndex = (int32)InputValue;
+
+	// 3. 숫자 -> Enum 변환
+	EWeaponCode TargetCode = EWeaponCode::OneHandedSword;
+
+	// 4. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
+	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
+
+	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
+	switch (WeaponIndex)
+	{
+	case 1:
+		TargetCode = EWeaponCode::OneHandedSword; // 1번 -> 한손검
+		if (PC)
+		{
+			PC->PushDownKeyboard1();          // UI 업데이트
+		}
+		break;
+
+	case 2:
+		TargetCode = EWeaponCode::TwoHandedSword; // 2번 -> 양손검
+		if (PC)
+		{
+			PC->PushDownKeyboard2();
+		}
+		break;
+
+	case 3:
+		TargetCode = EWeaponCode::DualBlade;      // 3번 -> 쌍검
+		if (PC)
+		{
+			PC->PushDownKeyboard3();
+		}
+		break;
+
+	default:
+		return; // 1, 2, 3번이 아니면 아무것도 안 함
+	}
+
+	// =============================================================
+	// 6. 실제 무기 교체 로직 (WeaponManager 활용)
+	// =============================================================
+	if (WeaponManager)
+	{
+		// A. 매니저에게서 해당 코드의 무기(미리 소환된 것)를 가져옵니다.
+		AWeaponActor* NewWeapon = WeaponManager->GetWeaponInstance(TargetCode);
+
+		// 무기가 존재하고, 현재 들고 있는 무기와 다를 때만 교체 진행
+		if (NewWeapon && NewWeapon != CurrentWeapon)
+		{
+			// B. [기존 무기 정리] 현재 들고 있는 게 있다면 숨깁니다.
+			if (CurrentWeapon)
+			{
+				CurrentWeapon->SetActorHiddenInGame(true);     // 숨김
+				CurrentWeapon->SetActorEnableCollision(false); // 충돌 끔
+
+				// 만약 쌍검이라서 왼손 무기가 켜져 있었다면, 그것도 끕니다.
+				if (auto* LeftMesh = CurrentWeapon->GetLeftWeaponMesh())
+				{
+					LeftMesh->SetVisibility(false);
+				}
+			}
+
+			// C. [새 무기 장착] 숨겨져 있던 무기를 꺼냅니다.
+			NewWeapon->SetActorHiddenInGame(false);   // 보임
+			NewWeapon->SetActorEnableCollision(true); // 충돌 켬
+
+			// D. 오른손 소켓에 붙입니다. (공통)
+			NewWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("hand_rSocket"));
+
+			// E. [쌍검 체크] 왼손 무기가 있는 경우 처리
+			if (auto* LeftMesh = NewWeapon->GetLeftWeaponMesh())
+			{
+				// 1. 보이게 하고 소켓에 붙임 (여기서 SnapToTarget 때문에 위치가 0,0,0으로 초기화됨!)
+				LeftMesh->SetVisibility(true);
+				LeftMesh->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("hand_lSocket"));
+
+				// 2. [추가] 초기화된 위치를 다시 "손잡이 기준"으로 재조정!
+				NewWeapon->AdjustMeshToSocket(LeftMesh);
+			}
+
+			// F. 현재 무기 변수 갱신 ("이제 이게 내 무기다!")
+			CurrentWeapon = NewWeapon;
+		}
+	}
 }
 void APlayerCharacter::ViewStat()
 {

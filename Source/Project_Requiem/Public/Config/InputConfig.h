@@ -15,7 +15,8 @@ enum class EHumanoidInput : uint8
     Sprint,
     Inventory,
     Interact,
-    Stat
+    Stat,
+    EquipWeapon,
 };
 
 UCLASS(BlueprintType)

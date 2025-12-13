@@ -34,6 +34,7 @@ public:
 	void Roll(const FInputActionValue& Value);
 	void SetSprintMode(const FInputActionValue& Value);
 	void SetWalkMode(const FInputActionValue& Value);
+	void EquipWeapon(const FInputActionValue& Value);
 	void ViewStat();
 
 #pragma endregion
@@ -48,11 +49,16 @@ protected:
 	TObjectPtr<class USpringArmComponent> SpringArm = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
 	TObjectPtr<class UCameraComponent> PlayerCamera = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Weapon")
+	TObjectPtr<class UWeaponManagerComponent> WeaponManager = nullptr;
 
 	// 구르기 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation|Montage")
 	TObjectPtr<UAnimMontage> RollMontage = nullptr;
 
+	// 현재 손에 들고 있는 무기
+	UPROPERTY(VisibleInstanceOnly, Category = "Combat")
+	TObjectPtr<class AWeaponActor> CurrentWeapon = nullptr;
 
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")
