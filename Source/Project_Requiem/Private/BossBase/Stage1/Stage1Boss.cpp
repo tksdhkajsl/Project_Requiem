@@ -29,6 +29,8 @@ void AStage1Boss::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 {
 	Super::OnPhaseChanged_Implementation(NewPhase, OldPhase);
 
+	UE_LOG(LogTemp, Warning, TEXT("Stage1Boss Phase Changed: %d -> %d"), OldPhase, NewPhase);
+
 	if (NewPhase == 2)
 	{
 		bUseRangedAttack = true;
