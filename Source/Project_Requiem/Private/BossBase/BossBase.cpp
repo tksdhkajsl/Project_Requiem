@@ -403,6 +403,46 @@ void ABossBase::ApplyMeleeDamage()
 	);
 }
 
+void ABossBase::ApplyRangedAttack()
+{
+	if (CurrentState == EBossState::Dead)
+	{
+		return;
+	}
+
+	if (!bUseRangedAttack || !TargetCharacter)
+	{
+		return;
+	}
+
+	if (!RangedProjectileClass)
+	{
+		return;
+	}
+
+	const FVector MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
+	const FRotator MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
+		RangedProjectileClass,
+		MuzzleLocation,
+		MuzzleRotation,
+		SpawnParams
+	);
+
+	if (!Projectile)
+	{
+		return;
+	}
+
+	AController* BossController = GetController();
+	Projectile->InitProjectile(RangedDamage, BossController);
+}
+
 // 보스 근접 공격 수행
 void ABossBase::PerformMeleeAttack()
 {
@@ -442,40 +482,24 @@ void ABossBase::PerformMeleeAttack()
 // 원거리 공격 수행
 void ABossBase::PerformRangedAttack()
 {
-	if (CurrentState == EBossState::Dead)
+	if (CurrentState == EBossState::Dead) return;
+	if (!bUseRangedAttack || !TargetCharacter) return;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		return;
+		MoveComp->StopMovementImmediately();
 	}
 
-	if (!bUseRangedAttack || !TargetCharacter)
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 	{
-		return;
+		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
+		{
+			AnimInstance->Montage_Play(RangedAttackMontage);
+		}
 	}
 
-	if (!RangedProjectileClass)
-	{
-		return;
-	}
 
-	const FVector MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
-	const FRotator MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = GetInstigator();
 
-	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
-		RangedProjectileClass,
-		MuzzleLocation,
-		MuzzleRotation,
-		SpawnParams
-	);
-
-	if (!Projectile)
-	{
-		return;
-	}
-
-	AController* BossController = GetController();
-	Projectile->InitProjectile(RangedDamage, BossController);
+	
 }

@@ -154,6 +154,7 @@ protected:
 
 	float TimeSinceLastRangedAttack = 0.0f;
 
+
 	// 발사체 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
 	TSubclassOf<ABossProjectile> RangedProjectileClass;
@@ -224,6 +225,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
 	void ApplyMeleeDamage();
 
+	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
+	void ApplyRangedAttack();
+
 // 애니메이션 몽타주
 protected:
 	// 근접 공격 몽타주
@@ -238,4 +242,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* DeathMontage = nullptr;
 
+	// 원거리 공격 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
+	UAnimMontage* RangedAttackMontage = nullptr;
 };
