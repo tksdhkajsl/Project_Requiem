@@ -234,9 +234,4 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* DeathMontage = nullptr;
 
-
-
-
-
-
 };

@@ -4,7 +4,7 @@
 #include "BossBase/Projectile/BossProjectile.h"
 
 #include "Components/SphereComponent.h"
-#include "Gameframework/ProjectileMovementComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -31,6 +31,7 @@ ABossProjectile::ABossProjectile()
 	Collision->SetNotifyRigidBodyCollision(true);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->UpdatedComponent = Collision;
 	ProjectileMovement->InitialSpeed = 1200.0f;
 	ProjectileMovement->MaxSpeed = 1200.0f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
