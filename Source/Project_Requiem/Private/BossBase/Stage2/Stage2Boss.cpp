@@ -2,6 +2,7 @@
 
 
 #include "BossBase/Stage2/Stage2Boss.h"
+#include "Internationalization/Text.h"
 
 AStage2Boss::AStage2Boss()
 {
@@ -12,6 +13,8 @@ AStage2Boss::AStage2Boss()
 	Phase2StartHPRatio = 0.5f;
 	Phase2_WalkSpeedMultiplier = 1.3f;
 	Phase2_MeleeDamageMultiplier = 1.7f;
+
+	BossName = FText::FromString(TEXT("한기의 집행자"));
 }
 
 void AStage2Boss::BeginPlay()

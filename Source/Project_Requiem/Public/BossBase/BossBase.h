@@ -99,6 +99,10 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
+	//보스 이름
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Info")
+	FText BossName;
+
 	// 추적할 타겟
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Target")
 	ACharacter* TargetCharacter = nullptr;

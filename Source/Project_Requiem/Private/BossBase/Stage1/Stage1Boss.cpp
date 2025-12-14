@@ -2,6 +2,7 @@
 
 
 #include "BossBase/Stage1/Stage1Boss.h"
+#include "Internationalization/Text.h"
 
 AStage1Boss::AStage1Boss()
 {
@@ -16,7 +17,7 @@ AStage1Boss::AStage1Boss()
 	Phase2_WalkSpeedMultiplier = 1.0f;
 	Phase2_MeleeDamageMultiplier = 1.0f;
 
-
+	BossName = FText::FromString(TEXT("사체포식자"));
 }
 
 void AStage1Boss::BeginPlay()
