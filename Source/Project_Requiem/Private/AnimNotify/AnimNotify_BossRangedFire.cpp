@@ -13,7 +13,7 @@ void UAnimNotify_BossRangedFire::Notify(USkeletalMeshComponent* MeshComp, UAnimS
 
 	if (ABossBase* Boss = Cast<ABossBase>(Owner))
 	{
-		Boss->ApplyRangedAttack();
+		Boss->ApplyRangedAttackFromSocket(SocketName);
 	}
 
 }

@@ -405,43 +405,9 @@ void ABossBase::ApplyMeleeDamage()
 
 void ABossBase::ApplyRangedAttack()
 {
-	if (CurrentState == EBossState::Dead)
-	{
-		return;
-	}
-
-	if (!bUseRangedAttack || !TargetCharacter)
-	{
-		return;
-	}
-
-	if (!RangedProjectileClass)
-	{
-		return;
-	}
-
-	const FVector MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
-	const FRotator MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.Instigator = GetInstigator();
-
-	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
-		RangedProjectileClass,
-		MuzzleLocation,
-		MuzzleRotation,
-		SpawnParams
-	);
-
-	if (!Projectile)
-	{
-		return;
-	}
-
-	AController* BossController = GetController();
-	Projectile->InitProjectile(RangedDamage, BossController);
+	ApplyRangedAttackFromSocket(RightHandSocketName);
 }
+
 
 // 보스 근접 공격 수행
 void ABossBase::PerformMeleeAttack()
@@ -479,11 +445,72 @@ void ABossBase::PerformMeleeAttack()
 
 }
 
+// 소켓 이름을 받아서 발사체 쏘는 함수
+void ABossBase::ApplyRangedAttackFromSocket(FName SocketName)
+{
+	if (CurrentState == EBossState::Dead)
+	{
+		return;
+	}
+
+	if (!bUseRangedAttack || !TargetCharacter)
+	{
+		return;
+	}
+
+	if (!RangedProjectileClass)
+	{
+		return;
+	}
+
+	FVector MuzzleLocation;
+	FRotator MuzzleRotation;
+
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp && SocketName != NAME_None && MeshComp->DoesSocketExist(SocketName))
+	{
+		MuzzleLocation = MeshComp->GetSocketLocation(SocketName);
+
+		MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
+	}
+	else
+	{
+		MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
+		MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
+	}
+
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = GetInstigator();
+
+	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
+		RangedProjectileClass,
+		MuzzleLocation,
+		MuzzleRotation,
+		SpawnParams
+	);
+
+	if (!Projectile)
+	{
+		return;
+	}
+
+	AController* BossController = GetController();
+	Projectile->InitProjectile(RangedDamage, BossController);
+}
+
 // 원거리 공격 수행
 void ABossBase::PerformRangedAttack()
 {
 	if (CurrentState == EBossState::Dead) return;
 	if (!bUseRangedAttack || !TargetCharacter) return;
+
+	if (!RangedAttackMontage)
+	{
+		ApplyRangedAttack();
+		return;
+	}
 
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
@@ -492,7 +519,7 @@ void ABossBase::PerformRangedAttack()
 
 	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 	{
-		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
+		if (!AnimInstance->IsAnyMontagePlaying())
 		{
 			AnimInstance->Montage_Play(RangedAttackMontage);
 		}

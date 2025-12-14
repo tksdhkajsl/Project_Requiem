@@ -154,6 +154,11 @@ protected:
 
 	float TimeSinceLastRangedAttack = 0.0f;
 
+	// 원거리 공격 소켓 위치
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	FName RightHandSocketName = TEXT("RightHandSlashSocket");
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	FName LeftHandSocketName = TEXT("LeftHandSlashSocket");
 
 	// 발사체 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
@@ -227,6 +232,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
 	void ApplyRangedAttack();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
+	void ApplyRangedAttackFromSocket(FName SocketName);
 
 // 애니메이션 몽타주
 protected:

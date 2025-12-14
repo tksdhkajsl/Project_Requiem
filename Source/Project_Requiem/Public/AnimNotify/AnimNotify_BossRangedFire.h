@@ -17,4 +17,11 @@ class PROJECT_REQUIEM_API UAnimNotify_BossRangedFire : public UAnimNotify
 
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss")
+	FName SocketName = NAME_None;
+
+
+
 };
