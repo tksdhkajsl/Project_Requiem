@@ -55,6 +55,7 @@ public:
 	inline class USceneComponent* GetSceneComponent() { return SpawnProjectileLocation.Get(); }
 
 
+
 protected:
 	// 보스 패턴 별 몽타주 추가 함수
 	void AddPatternMontage();

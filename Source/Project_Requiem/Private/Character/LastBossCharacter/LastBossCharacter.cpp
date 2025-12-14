@@ -26,18 +26,30 @@ void ALastBossCharacter::BeginPlay()
 void ALastBossCharacter::Move(const FVector& Direction, float Value)
 {
 	Super::Move(Direction, Value);
-
-	Move(Direction, Value);
 }
 
 void ALastBossCharacter::ApplyDamage(float DamageAmount)
 {
+	Super::ApplyDamage(DamageAmount);
+
 	OnApplyDamage.Broadcast(DamageAmount);
 }
 
 float ALastBossCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	float DamageTaken = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (StatComponent)
+	{
+		StatComponent->CurrHP = FMath::Max(0.0f, StatComponent->CurrHP - DamageTaken);
+	}
+
+	if(StatComponent->CurrHP <= 0.0f)
+	{
+		Die();
+	}
+
+	return DamageAmount;
 }
 
 void ALastBossCharacter::Die()
