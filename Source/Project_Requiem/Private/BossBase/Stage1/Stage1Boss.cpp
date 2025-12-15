@@ -7,18 +7,15 @@ AStage1Boss::AStage1Boss()
 	MaxHP = 800.0f;
 	EXP = 300.0f;
 
-	// 페이즈 사용(현재 코드는 1스테도 2페이즈 존재)
 	bUsePhaseSystem = true;
 	Phase2StartHPRatio = 0.5f;
 
-	// 시작은 원거리 OFF (2페이즈에서 켜도록)
 	bUseRangedAttack = false;
 
-	// 1스테는 페이즈2에서도 스탯 변화 없게(=1.0)
 	Phase2_WalkSpeedMultiplier = 1.0f;
 	Phase2_MeleeDamageMultiplier = 1.0f;
 
-	// 보스 이름(UI 표기용)
+	// 보스 이름
 	BossName = FText::FromString(TEXT("사체포식자"));
 }
 
@@ -36,7 +33,7 @@ void AStage1Boss::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 
 	if (NewPhase == 2)
 	{
-		// 2페이즈부터 원거리 사용 시작
+		// 2페이즈부터 원거리 공격 시작
 		bUseRangedAttack = true;
 	}
 }
