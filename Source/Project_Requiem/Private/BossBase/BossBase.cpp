@@ -216,7 +216,10 @@ void ABossBase::UpdateAttack(float DeltaTime)
 
 	if (DistanceToTarget > AttackMaxRange)
 	{
-		SetBossState(EBossState::Chase);
+		if (!bIsExecutingPattern)
+		{
+			SetBossState(EBossState::Chase);
+		}
 		return;
 	}
 
@@ -226,22 +229,40 @@ void ABossBase::UpdateAttack(float DeltaTime)
 	const FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, 10.0f);
 	SetActorRotation(NewRot);
 
-	if (DistanceToTarget <= MeleeAttackRange)
+	// 패턴 실행 중이면 기다림(노티파이/몽타주 끝에서 FinishCurrentPattern 호출)
+	if (bIsExecutingPattern)
 	{
-		if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
-		{
-			PerformMeleeAttack();         
-			TimeSinceLastMeleeAttack = 0.0f;
-		}
+		return;
 	}
-	else if (bUseRangedAttack && DistanceToTarget <= RangedAttackRange)
+
+	// 패턴 선택
+	const EBossPattern Next = SelectPattern(DistanceToTarget);
+
+	if (Next == EBossPattern::None)
 	{
-		if (TimeSinceLastRangedAttack >= RangedAttackInterval)
+
+		if (DistanceToTarget <= MeleeAttackRange)
 		{
-			PerformRangedAttack();       
-			TimeSinceLastRangedAttack = 0.0f;
+			if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
+			{
+				PerformMeleeAttack();         
+				TimeSinceLastMeleeAttack = 0.0f;
+			}
 		}
+		else if (bUseRangedAttack && DistanceToTarget <= RangedAttackRange)
+		{
+			if (TimeSinceLastRangedAttack >= RangedAttackInterval)
+			{
+				PerformRangedAttack();       
+				TimeSinceLastRangedAttack = 0.0f;
+			}
+		}
+		return;
+
 	}
+
+	// 선택된 패턴 실행
+	ExecutePattern(Next);
 }
 
 void ABossBase::UpdatePhaseChange(float DeltaTime)
@@ -421,6 +442,7 @@ void ABossBase::ApplyRangedAttackFromSocket(FName SocketName)
 }
 
 
+
 // 몽타주 있으면 몽타주 재생
 // 몽타주 없으면 즉시 발사
 void ABossBase::PerformRangedAttack()
@@ -450,3 +472,164 @@ void ABossBase::PerformRangedAttack()
 		}
 	}
 }
+
+
+// 패턴 함수
+
+
+const FBossPatternData* ABossBase::FindPatternData(EBossPattern Pattern) const
+{
+	for (const FBossPatternData& Data : PatternTable)
+	{
+		if (Data.Pattern == Pattern)
+		{
+			return &Data;
+		}
+	}
+	return nullptr;
+}
+
+bool ABossBase::IsPatternOffCooldown(EBossPattern Pattern, float Now) const
+{
+	const float* LastTimePtr = LastPatternUseTime.Find(Pattern);
+	if (!LastTimePtr) return true;
+
+	const FBossPatternData* Data = FindPatternData(Pattern);
+	if (!Data)
+	{
+		return true;
+	}
+
+	return (Now - *LastTimePtr) >= Data->Cooldown;
+}
+
+EBossPattern ABossBase::SelectPattern(float DistanceToTarget) const
+{
+	if (PatternTable.Num() <= 0)
+	{
+		return EBossPattern::None;
+	}
+
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+
+	// 후보 수집
+	TArray<const FBossPatternData*> Candidates;
+	float TotalWeight = 0.0f;
+
+	for (const FBossPatternData& Data : PatternTable)
+	{
+		if (Data.Pattern == EBossPattern::None) continue;
+
+		// 페이즈 조건
+		if (Data.OnlyPhase != 0 && Data.OnlyPhase != CurrentPhase) continue;
+
+		// 거리 조건
+		if (DistanceToTarget < Data.MinRange || DistanceToTarget > Data.MaxRange) continue;
+
+		// 쿨타임
+		const float* LastTimePtr = LastPatternUseTime.Find(Data.Pattern);
+		if (LastTimePtr)
+		{
+			if ((Now - *LastTimePtr) < Data.Cooldown) continue;
+		}
+
+		// 가중치
+		if (Data.Weight <= 0.0f) continue;
+
+		Candidates.Add(&Data);
+		TotalWeight += Data.Weight;
+	}
+
+	if (Candidates.Num() <= 0 || TotalWeight <= 0.0f)
+	{
+		return EBossPattern::None;
+	}
+
+	// 가중치 룰렛
+	const float Roll = FMath::FRandRange(0.0f, TotalWeight);
+	float Acc = 0.0f;
+
+	for (const FBossPatternData* Data : Candidates)
+	{
+		Acc += Data->Weight;
+		if (Roll <= Acc)
+		{
+			return Data->Pattern;
+		}
+	}
+
+	return Candidates.Last()->Pattern;
+}
+
+// 실행 패턴
+void ABossBase::ExecutePattern(EBossPattern Pattern)
+{
+	if (Pattern == EBossPattern::None) return;
+	if (CurrentState == EBossState::Dead) return;
+
+	const FBossPatternData* Data = FindPatternData(Pattern);
+	if (!Data) return;
+
+	bIsExecutingPattern = true;
+	CurrentPattern = Pattern;
+
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	LastPatternUseTime.FindOrAdd(Pattern) = Now;
+
+	// 공격중 이동 정지
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+	}
+
+	// 몽타주 있으면 재생, 실제 패턴은 노티파이에서 처리
+	if (Data->Montage)
+	{
+		if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+		{
+			if (!AnimInstance->IsAnyMontagePlaying())
+			{
+				AnimInstance->Montage_Play(Data->Montage);
+				return;
+			}
+		}
+	}
+
+	
+	switch (Pattern)
+	{
+	case EBossPattern::Melee_Slash:
+	case EBossPattern::Melee_Combo2:
+	case EBossPattern::Melee_GapClose:
+		PerformMeleeAttack();	//	실제 데미지는 ApplyMeleeDamage 노티파이에서
+		break;
+
+	case EBossPattern::Ranged_Single:
+		ApplyRangedAttackFromSocket(RightHandSocketName);
+		break;
+
+	case EBossPattern::Ranged_DoubleHands:
+		ApplyRangedAttackFromSocket(RightHandSocketName);
+		ApplyRangedAttackFromSocket(LeftHandSocketName);
+		break;
+
+	default:
+		break;
+	}
+
+	FinishCurrentPattern();
+}
+
+void ABossBase::FinishCurrentPattern()
+{
+	bIsExecutingPattern = false;
+	CurrentPattern = EBossPattern::None;
+
+	if (CurrentState == EBossState::Attack)
+	{
+		SetBossState(EBossState::Chase);
+	}
+}
+
+
+

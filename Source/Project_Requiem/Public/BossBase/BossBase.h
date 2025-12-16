@@ -28,7 +28,27 @@ enum class EBossAttackType : uint8
 	Ranged UMETA(DisplayName = "Ranged")  
 };
 
+// 보스 패턴
+UENUM(BlueprintType)
+enum class EBossPattern : uint8
+{
+	None UMETA(DisplayName = "None"),
 
+	// 공통 근접
+	Melee_Slash UMETA(DisplayName = "Melee_Slash"),
+	Melee_Combo2 UMETA(DisplayName = "Melee_Combo2"),
+	Melee_GapClose UMETA(DisplayName = "Melee_GapClose"),
+
+	// 공통 원거리
+	Ranged_Single UMETA(DisplayName = "Ranged_Single"),
+	Ranged_DoubleHands UMETA(DisplayName = "Ranged_DoubleHands"),
+	Ranged_Spread UMETA(DisplayName = "Ranged_Spread"),
+
+	// 보조/특수
+	Backstep UMETA(DisplayName = "Backstep"),
+	Roar_Stagger UMETA(DisplayName = "Roar_Stagger"),
+
+};
 
 
 
@@ -59,6 +79,39 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	int32, NewPhase,
 	int32, OldPhase
 );
+
+USTRUCT(BlueprintType)
+struct FBossPatternData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EBossPattern Pattern = EBossPattern::None;
+
+	// 실행 거리 조건
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MinRange = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float MaxRange = 999999.0f;
+
+	// 페이즈 조건 (0이면 무조건 허용, 1/2면 해당 페이즈에서 가능)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 OnlyPhase = 0;
+
+	// 선택 가중치
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Weight = 1.0f;
+
+	// 패턴 자체 쿨타임(초)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Cooldown = 2.0f;
+
+	// 실행 몽타주(없으면 즉시 로직 실행)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UAnimMontage* Montage = nullptr;
+
+};
 
 
 // 보스 베이스 클래스
@@ -258,4 +311,43 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* RangedAttackMontage = nullptr;
+
+
+protected:
+	// 패턴 선택
+
+	// 패턴 리스트
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Pattern")
+	TArray<FBossPatternData> PatternTable;
+
+	// 현재 실행 중 패턴
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Pattern")
+	EBossPattern CurrentPattern = EBossPattern::None;
+
+	// 패턴 실행 중인지 (공격 락 용도)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Pattern")
+	bool bIsExecutingPattern = false;
+
+	// 패턴별 마지막 사용 시간
+	TMap<EBossPattern, float> LastPatternUseTime;
+
+	// 패턴 종료 호출용(몽타주 끝/노티파이 끝에서 사용)
+	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	void FinishCurrentPattern();
+
+
+	// 패턴 함수
+
+	// 후보 필터 후 선택
+	EBossPattern SelectPattern(float DistanceToTarget) const;
+
+	// 선택된 패턴 실행
+	void ExecutePattern(EBossPattern Pattern);
+
+	// 패턴 데이터 찾기
+	const FBossPatternData* FindPatternData(EBossPattern Pattern) const;
+
+	// 쿨타임 체크
+	bool IsPatternOffCooldown(EBossPattern Pattern, float Now) const;
+
 };
