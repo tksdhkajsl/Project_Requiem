@@ -4,27 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
-#include "BTServiceChasePlayer.generated.h"
+#include "BTServiceSettingPhase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECT_REQUIEM_API UBTServiceChasePlayer : public UBTService
+class PROJECT_REQUIEM_API UBTServiceSettingPhase : public UBTService
 {
 	GENERATED_BODY()
 	
+public:
+	UBTServiceSettingPhase();
+
 protected:
 	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
-	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
-
 protected:
-	// 플레이어 위치값을 저장할 블랙보드 키
 	UPROPERTY(EditAnywhere, Category = "Blackboard|Key")
-	FBlackboardKeySelector TargetPlayerLocationKey;
+	FBlackboardKeySelector PhaseKey;
+	UPROPERTY(EditAnywhere, Category = "Blackboard|Key")
+	FBlackboardKeySelector MontageNumberKey;
 
 private:
-	UPROPERTY()
+	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
 	TWeakObjectPtr<class UBlackboardComponent> BlackBoardComp = nullptr;
 };

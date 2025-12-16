@@ -1,13 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Characters/LastBossCharacter/AnimNotifyState/BossAnimNotifyStateProjectileSpawn.h"
+#include "Characters/LastBossCharacter/AnimNotify/BossAnimNotifyProjectileSpawn.h"
 #include "Characters/LastBossCharacter/LastBossCharacter.h"
 #include "Stats/StatComponent.h"
 
-void UBossAnimNotifyStateProjectileSpawn::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
+void UBossAnimNotifyProjectileSpawn::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
+	Super::Notify(MeshComp, Animation);
 
 	if (!LastBoss.IsValid())
 	{
@@ -22,19 +22,7 @@ void UBossAnimNotifyStateProjectileSpawn::NotifyBegin(USkeletalMeshComponent* Me
 	}
 }
 
-void UBossAnimNotifyStateProjectileSpawn::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
-{
-	// 스폰된 Projectile 제거
-	if (SpawnedProjectile.IsValid())
-	{
-		SpawnedProjectile->Destroy();
-		SpawnedProjectile = nullptr;
-		//UE_LOG(LogTemp, Log, TEXT("노티파이가 끝나 스폰된 액터가 삭제되었습니다"));
-	}
-	Super::NotifyEnd(MeshComp, Animation, EventReference);
-}
-
-void UBossAnimNotifyStateProjectileSpawn::DoSpawnProjectile(TSubclassOf<AProjectileBase> InSpawnActor)
+void UBossAnimNotifyProjectileSpawn::DoSpawnProjectile(TSubclassOf<AProjectileBase> InSpawnActor)
 {
 	// 유효성 검사
 	if (!LastBoss.IsValid() || !InSpawnActor)
@@ -118,3 +106,4 @@ void UBossAnimNotifyStateProjectileSpawn::DoSpawnProjectile(TSubclassOf<AProject
 		}
 	}
 }
+

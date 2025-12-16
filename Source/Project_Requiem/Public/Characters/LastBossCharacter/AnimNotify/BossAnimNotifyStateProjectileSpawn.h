@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Characters/LastBossCharacter/Projectile/ProjectileBase.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
+#include "Characters/LastBossCharacter/Projectile/ProjectileBase.h"
 #include "BossAnimNotifyStateProjectileSpawn.generated.h"
 
 /**

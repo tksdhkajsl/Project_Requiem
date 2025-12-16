@@ -17,10 +17,12 @@ AProjectileBase::AProjectileBase()
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
 	SetRootComponent(CapsuleComponent);
 	CapsuleComponent->SetCollisionProfileName(FName("OverlapAll"), true);
+	CapsuleComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(CapsuleComponent);
 	MeshComponent->SetCollisionProfileName(FName("OverlapAll"),false);
+	MeshComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
 	Niagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Niagara"));
 	Niagara->SetupAttachment(CapsuleComponent);
@@ -44,10 +46,15 @@ void AProjectileBase::BeginPlay()
 		GetWorld()->GetTimerManager().SetTimer(
 			TickTimerHandle,
 			this,
-			&AProjectileBase::MoveProjectile,
+			&AProjectileBase::ActivateTick,
 			TickRate,
 			true
 		);
+}
+
+void AProjectileBase::ActivateTick()
+{
+	MoveProjectile();
 }
 
 void AProjectileBase::ActivateProjectile()

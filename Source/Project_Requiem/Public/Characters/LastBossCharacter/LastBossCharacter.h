@@ -38,7 +38,7 @@ public:
 	virtual void Move(const FVector& Direction, float Value) override;
 
 	// 데미지를 받을 때(내 실제 피가 깍임)
-	virtual void ReceiveDamage(float DamageAmount) override;
+	virtual void ReceiveDamage(float DamageAmount) final;
 
 	// 데미지를 받을 때(엔진에서 적용됨)
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) final;
@@ -65,9 +65,6 @@ public:
 protected:
 	// 보스 패턴 배열에 몽타주 추가 함수
 	void AddPatternMontage();
-
-	// 보스의 패턴 재생 함수
-	void RandomPatternPlay();
 
 protected:
 	// 투사체 스폰 위치

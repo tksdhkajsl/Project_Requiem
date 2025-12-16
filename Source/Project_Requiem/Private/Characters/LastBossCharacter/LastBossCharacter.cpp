@@ -32,7 +32,9 @@ void ALastBossCharacter::Move(const FVector& Direction, float Value)
 
 void ALastBossCharacter::ReceiveDamage(float DamageAmount)
 {
-	OnApplyDamage.Broadcast(DamageAmount);
+	//OnApplyDamage.Broadcast(DamageAmount);
+
+	Super::ReceiveDamage(DamageAmount);
 }
 
 float ALastBossCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -85,35 +87,3 @@ void ALastBossCharacter::AddPatternMontage()
 	PhaseTwoPatterns.Add(PhaseTwoMontage5);
 }
 
-void ALastBossCharacter::RandomPatternPlay()
-{
-	int32 Index = FMath::RandRange(1, PhaseOnePatterns.Num());
-	if (Phase == 1)
-	{
-		if (PhaseOnePatterns.Num() == 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PhaseOnePatterns is Empty!!!"));
-			return;
-		}
-
-		// 페이즈 1 몽타주 출력
-		if (PhaseOnePatterns.IsValidIndex(Index) && PhaseOnePatterns[Index])
-		{
-			PlayAnimMontage(PhaseOnePatterns[Index]);
-		}
-	}
-	else if (Phase == 2)
-	{
-		if (PhaseOnePatterns.Num() == 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("PhaseTwoPatterns is Empty!!!"));
-			return;
-		}
-
-		// 페이즈 2 몽타주 출력
-		if (PhaseTwoPatterns.IsValidIndex(Index) && PhaseTwoPatterns[Index])
-		{
-			PlayAnimMontage(PhaseTwoPatterns[Index]);
-		}
-	}
-}

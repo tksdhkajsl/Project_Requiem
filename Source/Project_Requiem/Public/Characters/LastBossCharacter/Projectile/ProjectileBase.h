@@ -20,7 +20,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
+protected:
+	void ActivateTick();
+
 	// 투사체 활성화
 	void ActivateProjectile();
 
@@ -30,7 +32,6 @@ public:
 	// 투사체 활성화 여부
 	inline bool IsActiveProjectile() { return bApplyDamageActive; }
 
-protected:
 	// 플레이어와 Overlap 되었을 때
 	UFUNCTION()
 	void OnPlayerBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
