@@ -35,20 +35,18 @@ enum class EBossPattern : uint8
 	None UMETA(DisplayName = "None"),
 
 	// 공통 근접
-	Melee_Slash UMETA(DisplayName = "Melee_Slash"),
-	Melee_Combo2 UMETA(DisplayName = "Melee_Combo2"),
-	Melee_GapClose UMETA(DisplayName = "Melee_GapClose"),
-
-	// 공통 원거리
-	Ranged_Single UMETA(DisplayName = "Ranged_Single"),
-	Ranged_DoubleHands UMETA(DisplayName = "Ranged_DoubleHands"),
-	Ranged_Spread UMETA(DisplayName = "Ranged_Spread"),
-
-	// 보조/특수
-	Backstep UMETA(DisplayName = "Backstep"),
-	Roar_Stagger UMETA(DisplayName = "Roar_Stagger"),
+	Pattern1  UMETA(DisplayName = "Pattern1 "),
+	Pattern2  UMETA(DisplayName = "Pattern2 "),
+	Pattern3  UMETA(DisplayName = "Pattern3 "),
+	Pattern4  UMETA(DisplayName = "Pattern4 "),
+	Pattern5  UMETA(DisplayName = "Pattern5 "),
+	Pattern6  UMETA(DisplayName = "Pattern6 "),
+	Pattern7  UMETA(DisplayName = "Pattern7 "),
+	Pattern8  UMETA(DisplayName = "Pattern8 "),
 
 };
+
+	
 
 
 
@@ -312,6 +310,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* RangedAttackMontage = nullptr;
 
+public:
+
+	// 패턴 종료 호출용(몽타주 끝/노티파이 끝에서 사용)
+	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	void FinishCurrentPattern();
 
 protected:
 	// 패턴 선택
@@ -331,9 +334,6 @@ protected:
 	// 패턴별 마지막 사용 시간
 	TMap<EBossPattern, float> LastPatternUseTime;
 
-	// 패턴 종료 호출용(몽타주 끝/노티파이 끝에서 사용)
-	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
-	void FinishCurrentPattern();
 
 
 	// 패턴 함수

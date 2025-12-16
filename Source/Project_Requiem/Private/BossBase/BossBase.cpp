@@ -598,17 +598,20 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	
 	switch (Pattern)
 	{
-	case EBossPattern::Melee_Slash:
-	case EBossPattern::Melee_Combo2:
-	case EBossPattern::Melee_GapClose:
+	case EBossPattern::Pattern1:
+	case EBossPattern::Pattern2:
+	case EBossPattern::Pattern3:
+	case EBossPattern::Pattern4:
+	case EBossPattern::Pattern5:
 		PerformMeleeAttack();	//	실제 데미지는 ApplyMeleeDamage 노티파이에서
 		break;
 
-	case EBossPattern::Ranged_Single:
+	case EBossPattern::Pattern6:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		break;
 
-	case EBossPattern::Ranged_DoubleHands:
+	case EBossPattern::Pattern7:
+	case EBossPattern::Pattern8:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		ApplyRangedAttackFromSocket(LeftHandSocketName);
 		break;
