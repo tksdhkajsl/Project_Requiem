@@ -1,6 +1,11 @@
 ﻿#include "Character/BaseCharacter.h"
 
 #include "Stats/StatComponent.h"
+
+#pragma region 캡쳐 컴포넌트 관련
+#include "Components/SceneCaptureComponent2D.h"
+#pragma endregion
+
 //---------------기본 생성-------------------
 ABaseCharacter::ABaseCharacter()
 {
@@ -10,7 +15,15 @@ ABaseCharacter::ABaseCharacter()
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 #pragma endregion
 
-
+#pragma region 캡쳐 컴포넌트 관련
+	PortraitCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PortraitCapture"));
+	PortraitCaptureComponent->SetupAttachment(RootComponent);
+	PortraitCaptureComponent->SetRelativeLocation(FVector(150.f, 0.f, 70.f));
+	PortraitCaptureComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+	PortraitCaptureComponent->bCaptureEveryFrame = false;
+	PortraitCaptureComponent->bAlwaysPersistRenderingState = true;
+	PortraitCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
+#pragma endregion
 }
 void ABaseCharacter::Tick(float DeltaTime)
 {
@@ -20,7 +33,6 @@ void ABaseCharacter::Tick(float DeltaTime)
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 void ABaseCharacter::BeginPlay()
 {
@@ -30,6 +42,14 @@ void ABaseCharacter::BeginPlay()
 	StatComponent->InitializeStatsComponent();
 #pragma endregion
 
+#pragma region 캡쳐 컴포넌트 관련
+	if (PortraitCaptureComponent) {
+		TArray<AActor*> ActorsToShow;
+		ActorsToShow.Add(this);
+		PortraitCaptureComponent->ShowOnlyActors = ActorsToShow;
+		PortraitCaptureComponent->bCaptureEveryFrame = false;
+	}
+#pragma endregion
 }
 //---------------스탯 컴포넌트 관련-------------------
 
