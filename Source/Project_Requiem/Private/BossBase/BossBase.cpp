@@ -607,10 +607,10 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 		break;
 
 	case EBossPattern::Pattern6:
+	case EBossPattern::Pattern7:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		break;
 
-	case EBossPattern::Pattern7:
 	case EBossPattern::Pattern8:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		ApplyRangedAttackFromSocket(LeftHandSocketName);
