@@ -89,7 +89,7 @@ void ABonfire::HealPlayer(AActor* PlayerActor)
 		Player->StatComponent->ChangeStatCurrent(EFullStats::Health, MaxHP - CurrentHP);
 		Player->StatComponent->ChangeStatCurrent(EFullStats::Stamina, MaxST - CurrentST);
 
-		// 상태 이상 해제나 포션 리필 로직도 여기에 추가 가능
+		// 상태 ,물약 관련 로직도 여기에 추가 가능
 		UE_LOG(LogTemp, Log, TEXT("Player Fully Healed"));
 	}
 }
