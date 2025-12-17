@@ -93,13 +93,13 @@ void ABossBase::SetBossState(EBossState NewState)
 			}
 		}
 
-		// 3초 뒤 Destroy
+		// 3.3초 뒤 Destroy
 		FTimerHandle DestroyTimerHandle;
 		GetWorldTimerManager().SetTimer(
 			DestroyTimerHandle,
 			this,
 			&ABossBase::K2_DestroyActor,
-			3.0f, false
+			3.3f, false
 		);
 	}
 	break;
