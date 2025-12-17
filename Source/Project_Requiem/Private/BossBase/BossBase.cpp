@@ -93,13 +93,13 @@ void ABossBase::SetBossState(EBossState NewState)
 			}
 		}
 
-		// 3.3초 뒤 Destroy
+		// 3.5초 뒤 Destroy
 		FTimerHandle DestroyTimerHandle;
 		GetWorldTimerManager().SetTimer(
 			DestroyTimerHandle,
 			this,
 			&ABossBase::K2_DestroyActor,
-			3.3f, false
+			3.5f, false
 		);
 	}
 	break;
@@ -360,17 +360,19 @@ void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 	}
 }
 
+// 페이즈 전환 끝
 void ABossBase::FinishPhaseChange()
 {
-	if (CurrentState == EBossState::PhaseChange)
-	{
-		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-		{
-			MoveComp->SetMovementMode(MOVE_Walking);
-		}
+	if (CurrentState != EBossState::PhaseChange) return;
 
-		SetBossState(EBossState::Chase);
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->SetMovementMode(MOVE_Walking);
 	}
+
+	UnlockMovement();
+
+	SetBossState(EBossState::Chase);
 }
 
 // 페이즈 전환 범위 공격 실행
