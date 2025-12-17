@@ -13,19 +13,26 @@
 // Sets default values
 ABonfire::ABonfire()
 { 	
-
+	PrimaryActorTick.bCanEverTick = false;
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	RootComponent = Mesh;
 
 	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
 	InteractionBox->SetupAttachment(RootComponent);
-	InteractionBox->SetBoxExtent(FVector(100.f, 100.f, 100.f));
 
-	// 인터렉션 트레이스 채널 설정 (PlayerCharacter.cpp의 TraceForInteraction 참고)
-	InteractionBox->SetCollisionProfileName(TEXT("BlockAllDynamic"));
+	InteractionBox->SetBoxExtent(FVector(60.f, 60.f, 100.f));
+	InteractionBox->SetRelativeLocation(FVector(0.f, 0.f, 80.f));
 
+	InteractionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractionBox->SetCollisionObjectType(ECC_WorldDynamic);
+	InteractionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	InteractionBox->SetGenerateOverlapEvents(false);
 }
 
+// ========================================================
+// HUD 위젯 클래스
+// ========================================================
 bool ABonfire::CanInteract_Implementation(const APlayerCharacter* Caller) const
 {
 	return false;
@@ -45,6 +52,9 @@ void ABonfire::Interact_Implementation(APlayerCharacter* Caller)
 
 	// 2. 적 리스폰 (월드의 모든 스포너 찾기)
 	RespawnAllEnemies();
+	
+	// 3. 스탯 올리고,물약 살 수 있는 widget 띄우기 
+
 }
 
 void ABonfire::RespawnAllEnemies()
