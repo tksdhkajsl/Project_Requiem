@@ -304,22 +304,37 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		return ActualDamage;
 	}
 
+	bool bWillEnterPhaseChange = false;
+
 	if (bUsePhaseSystem && CurrentPhase == 1 && MaxHP > 0.0f)
 	{
 		const float HPRatio = CurrentHP / MaxHP;
 
 		if (HPRatio <= Phase2StartHPRatio)
 		{
-			const int32 OldPhase = CurrentPhase;
-			CurrentPhase = 2;
-
-			// 외부에 페이즈 변경 알림
-			OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
-
-			OnPhaseChanged(CurrentPhase, OldPhase);
-
-			SetBossState(EBossState::PhaseChange);
+			bWillEnterPhaseChange = true;
 		}
+	}
+
+			
+
+	// 페이즈 넘어갈때는 피격 스킵
+	if (!bWillEnterPhaseChange)
+	{
+		TryPlayHitReact();
+	}
+
+	if (bWillEnterPhaseChange)
+	{
+		const int32 OldPhase = CurrentPhase;
+		CurrentPhase = 2;
+
+		// 외부에 페이즈 변경 알림
+		OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
+
+		OnPhaseChanged(CurrentPhase, OldPhase);
+
+		SetBossState(EBossState::PhaseChange);
 	}
 
 	return ActualDamage;
@@ -622,6 +637,28 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 
 	FinishCurrentPattern();
 }
+
+void ABossBase::TryPlayHitReact()
+{
+	if (!bEnableHitReact) return;
+	if (CurrentState == EBossState::Dead) return;
+	if (CurrentState == EBossState::PhaseChange) return;
+	if (!HitReactMontage) return;
+	if (!bHitReactWhileExecutingPattern && bIsExecutingPattern) return;
+
+	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	if ((Now - LastHitReactTime) < HitReactCooldown) return;
+
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance) return;
+
+	if (AnimInstance->Montage_IsPlaying(HitReactMontage)) return;
+
+	AnimInstance->Montage_Play(HitReactMontage);
+	LastHitReactTime = Now;
+}
+
+
 
 void ABossBase::FinishCurrentPattern()
 {

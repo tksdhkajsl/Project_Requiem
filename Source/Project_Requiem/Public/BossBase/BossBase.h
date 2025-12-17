@@ -7,6 +7,7 @@
 #include "BossBase.generated.h"
 
 class ABossProjectile;
+class UAnimMontage;
 
 //보스 상태
 UENUM(BlueprintType)
@@ -309,6 +310,25 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* RangedAttackMontage = nullptr;
+
+	// 피격 리액션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
+	UAnimMontage* HitReactMontage = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bEnableHitReact = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta=(ClampMin = "0.0"))
+	float HitReactCooldown = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bHitReactWhileExecutingPattern = false;
+
+	float LastHitReactTime = -9999.0f;
+
+	void TryPlayHitReact();
+
+
 
 public:
 
