@@ -197,7 +197,7 @@ protected:
 
 	// 근접 공격 유효 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
-	float MeleeAttackRange = 200.0f; 
+	float MeleeAttackRange = 250.0f; 
 
 	// 근접 공격 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
@@ -226,6 +226,15 @@ protected:
 	float RangedAttackInterval = 3.0f; 
 
 	float TimeSinceLastRangedAttack = 0.0f;
+
+	// 보스 공격 범위 튜닝
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Tuning")
+	float MeleeZoneMaxRange = 250.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Tuning")
+	float RangedZoneMinRange = 700.0f;
+
+
 
 	// 발사 소켓(오른손/왼손)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
@@ -340,6 +349,10 @@ public:
 	// 원거리 몽타주 끝났을 때 이동 가능
 	UFUNCTION()
 	void OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 근접 몽타주 종료
+	UFUNCTION()
+	void OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
 	// 애니메이션 몽타주 포인터

@@ -172,10 +172,13 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
-	// 공격 진입 거리
-	const float AttackEnterRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
+	if (DistanceToTarget <= MeleeZoneMaxRange)
+	{
+		SetBossState(EBossState::Attack);
+		return;
+	}
 
-	if (DistanceToTarget <= AttackEnterRange)
+	if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange && DistanceToTarget <= RangedAttackRange)
 	{
 		SetBossState(EBossState::Attack);
 		return;
@@ -212,12 +215,11 @@ void ABossBase::UpdateAttack(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
-	const float AttackMaxRange = bUseRangedAttack ? RangedAttackRange : MeleeAttackRange;
-
-	if (DistanceToTarget > AttackMaxRange)
+	if (DistanceToTarget > MeleeZoneMaxRange && DistanceToTarget < RangedZoneMinRange)
 	{
 		if (!bIsExecutingPattern)
 		{
+			UnlockMovement();
 			SetBossState(EBossState::Chase);
 		}
 		return;
@@ -241,7 +243,7 @@ void ABossBase::UpdateAttack(float DeltaTime)
 	if (Next == EBossPattern::None)
 	{
 
-		if (DistanceToTarget <= MeleeAttackRange)
+		if (DistanceToTarget <= MeleeZoneMaxRange)
 		{
 			if (TimeSinceLastMeleeAttack >= MeleeAttackInterval)
 			{
@@ -249,7 +251,7 @@ void ABossBase::UpdateAttack(float DeltaTime)
 				TimeSinceLastMeleeAttack = 0.0f;
 			}
 		}
-		else if (bUseRangedAttack && DistanceToTarget <= RangedAttackRange)
+		else if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange)
 		{
 			if (TimeSinceLastRangedAttack >= RangedAttackInterval)
 			{
@@ -434,17 +436,26 @@ void ABossBase::PerformMeleeAttack()
 	const float Distance = FVector::Dist2D(GetActorLocation(), TargetCharacter->GetActorLocation());
 	if (Distance > MeleeAttackRange) return; 
 
-	GetCharacterMovement()->StopMovementImmediately();
+	LockMovement();
 
 	if (MeleeAttackMontage)
 	{
-		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+		if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 		{
 			if (!AnimInstance->Montage_IsPlaying(MeleeAttackMontage))
 			{
 				AnimInstance->Montage_Play(MeleeAttackMontage);
+
+				// 근접 몽타주 끝나면 이동 잠금 해제
+				FOnMontageEnded EndDelegate;
+				EndDelegate.BindUObject(this, &ABossBase::OnMeleeMontageEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, MeleeAttackMontage);
 			}
 		}
+	}
+	else
+	{
+		UnlockMovement();
 	}
 }
 
@@ -553,6 +564,15 @@ void ABossBase::StartCurrentPatternInvulnerability()
 void ABossBase::OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (Montage == RangedAttackMontage)
+	{
+		UnlockMovement();
+	}
+}
+
+// 근접 몽타주 끝내기
+void ABossBase::OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == MeleeAttackMontage)
 	{
 		UnlockMovement();
 	}
