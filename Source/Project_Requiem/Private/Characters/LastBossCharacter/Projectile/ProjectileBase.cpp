@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Characters/LastBossCharacter/Projectile/ProjectileBase.h"
+#include "Components/ArrowComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraSystem.h"
@@ -14,8 +15,11 @@ AProjectileBase::AProjectileBase()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	ArrowComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("ArrowComponent(Root)"));
+	SetRootComponent(ArrowComponent);
+
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleComponent"));
-	SetRootComponent(CapsuleComponent);
+	CapsuleComponent->SetupAttachment(ArrowComponent);
 	CapsuleComponent->SetCollisionProfileName(FName("OverlapAll"), true);
 	CapsuleComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 
@@ -55,6 +59,19 @@ void AProjectileBase::BeginPlay()
 void AProjectileBase::ActivateTick()
 {
 	MoveProjectile();
+
+	// bActiveTickDamage가 true면 틱마다 오버랩 중인 플레이어에게 데미지 적용
+	if (bActiveTickDamage && OverlappingTargets.Num() > 0)
+	{
+		// 오버랩 컬렉션을 순회하며 유효한 액터에 대해 데미지 적용
+		for (const TWeakObjectPtr<AActor>& WeakActor : OverlappingTargets)
+		{
+			if (AActor* TargetActor = WeakActor.Get())
+			{
+				ApplyDamageToPlayer(TargetActor);
+			}
+		}
+	}
 }
 
 void AProjectileBase::ActivateProjectile()
@@ -88,7 +105,9 @@ void AProjectileBase::DeactivateProjectile()
 		GetWorld()->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("투사체 지속시간에 의해 스폰된 액터가 삭제되었습니다"));
+	OverlappingTargets.Empty();
+
+	//UE_LOG(LogTemp, Log, TEXT("투사체 지속시간에 의해 스폰된 액터가 삭제되었습니다"));
 	Destroy();
 }
 
@@ -103,16 +122,9 @@ void AProjectileBase::OnPlayerBeginOverlap(AActor* OverlappedActor, AActor* Othe
 		LastBoss = Cast<ALastBossCharacter>(GetOwner());
 	}
 
-	float AttackDamage = 0.0f;
 	if (LastBoss.IsValid())
 	{
-		if (UStatComponent* BossStat = LastBoss->GetStatComponent())
-		{
-			AttackDamage = BossStat->PhyAtt * Damagemagnification;
-			UE_LOG(LogTemp, Log, TEXT("AttackDamage : %f"), AttackDamage);
-
-			ApplyDamageToPlayer(OtherActor, AttackDamage);
-		}
+		ApplyDamageToPlayer(OtherActor);
 	}
 	else
 	{
@@ -125,17 +137,23 @@ void AProjectileBase::OnPlayerEndOverlap(AActor* OverlappedActor, AActor* OtherA
 
 }
 
-void AProjectileBase::ApplyDamageToPlayer(AActor* OtherActor, float InDamage)
+void AProjectileBase::ApplyDamageToPlayer(AActor* OtherActor)
 {
-	if (!OtherActor || (InDamage <= 0.0f))
+	if (!OtherActor)
 		return;
 
 	APawn* Target = Cast<APawn>(OtherActor);
 	if (!Target || !Target->IsPlayerControlled())
 		return;
 
+	float AttackDamage = 0.0f;
+	if (UStatComponent* BossStat = LastBoss->GetStatComponent())
+	{
+		AttackDamage = BossStat->PhyAtt * Damagemagnification;
+		UE_LOG(LogTemp, Log, TEXT("AttackDamage : %f"), AttackDamage);
+	}
 
-	LastBoss->Attack(OtherActor, InDamage);
+	LastBoss->Attack(OtherActor, AttackDamage);
 
 	// SingleHitMode 활성화시 투사체가 데미지를 준 후 비활성화
 	if (SingleHitMode)

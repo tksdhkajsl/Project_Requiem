@@ -32,8 +32,9 @@ void ALastBossCharacter::Move(const FVector& Direction, float Value)
 
 void ALastBossCharacter::ReceiveDamage(float DamageAmount)
 {
-	//OnApplyDamage.Broadcast(DamageAmount);
+	GetStatComponent()->CurrHP -= DamageAmount;
 
+	OnApplyDamage.Broadcast(DamageAmount);
 	Super::ReceiveDamage(DamageAmount);
 }
 

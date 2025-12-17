@@ -21,6 +21,7 @@ protected:
 	virtual void BeginPlay() override;
 
 protected:
+	// 틱 활성화시 실행될 함수
 	void ActivateTick();
 
 	// 투사체 활성화
@@ -41,7 +42,7 @@ protected:
 	void OnPlayerEndOverlap(AActor* OverlappedActor, AActor* OtherActor);
 
 	// 플레이어에게 데미지를 주는 함수
-	void ApplyDamageToPlayer(AActor* Target, float InDamage);
+	void ApplyDamageToPlayer(AActor* Target);
 
 	// 투살체의 이동 함수
 	void MoveProjectile();
@@ -52,11 +53,13 @@ protected:
 
 protected:
 	// 컴포넌트
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
+	TObjectPtr<class UArrowComponent> ArrowComponent = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<class UCapsuleComponent> CapsuleComponent = nullptr;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Component")
 	TObjectPtr<class UStaticMeshComponent> MeshComponent = nullptr;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Niagara")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Niagara")
 	TObjectPtr<class UNiagaraComponent> Niagara = nullptr;
 
 	// 투사체 정보
@@ -67,11 +70,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Damage")
 	bool SingleHitMode = false;
 	// 투사체 틱 레이트
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
 	float TickRate = 0.0f;
 	// Tick 단위 투사체 이동 거리
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
 	float TickMoveDistance = 0.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
+	bool bActiveTickDamage = false;
 	// 투사체 지속시간
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move", meta = (ClampMin = "0"))
 	float LifeTime = 0.0f;
@@ -87,4 +92,7 @@ private:
 	// 투사체의 지속시간 타이머핸들
 	FTimerHandle LifeTimerHandle;
 	FTimerHandle TickTimerHandle;
+
+	UPROPERTY()
+	TSet<TWeakObjectPtr<AActor>> OverlappingTargets;
 };

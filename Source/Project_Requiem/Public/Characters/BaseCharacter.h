@@ -139,6 +139,7 @@ public:
     virtual void StopMovement();
 
     // ---- Combat & Actions ----
+    UFUNCTION(BlueprintCallable) /// 수정사항
     virtual void Attack(AActor* HitActor, float AttackDamage);
     virtual void StopAttack();
     virtual bool CanAttack() const;

@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Characters/Player/Character/PlayerCharacter.h"
 #include "Weapon/WeaponCodeEnum.h"
 #include "WeaponActor.generated.h"
+
+class APlayerCharacter;
 
 UCLASS()
 class PROJECT_REQUIEM_API AWeaponActor : public AActor
@@ -17,17 +18,32 @@ public:
 	// Sets default values for this actor's properties
 	AWeaponActor();
 
-	// 메시 위치를 조정하는 내부 함수
-	void AdjustMeshToSocket(USkeletalMeshComponent* InMesh);
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	void OnWeaponBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
 
-	virtual void OnWeaponActivate() {};
+public:
+	// 메시 위치를 조정하는 내부 함수
+	void AdjustMeshToSocket(USkeletalMeshComponent* InMesh);
+
+	// 공격 활성화/비활성화 (플레이어가 호출)
+	UFUNCTION(BlueprintCallable)
+	void AttackEnable(bool bEnable);
+
+protected:
+
+	// [수정] 컴포넌트 오버랩 이벤트에 맞는 시그니처로 변경
+	UFUNCTION()
+	void OnWeaponBeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp, 
+		int32 OtherBodyIndex,
+		bool bFromSweep, 
+		const FHitResult& SweepResult);
 	virtual void OnWeaponDeactivate() {};
 
 public:	
@@ -68,6 +84,14 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	float Damage = 10.0f;
+
+	// [추가] 왼손 소켓 이름 저장용
+	UPROPERTY(EditDefaultsOnly, Category = "Socket")
+	FName LeftHandGripSocketName = TEXT("HandGripL");
+
+	// [추가] 중복 타격 방지를 위한 목록
+	UPROPERTY()
+	TArray<AActor*> HitActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	TSubclassOf<UDamageType> DamageType = nullptr;

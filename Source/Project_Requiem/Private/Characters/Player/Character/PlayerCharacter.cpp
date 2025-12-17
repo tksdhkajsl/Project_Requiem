@@ -1,12 +1,14 @@
 #include "Characters/Player/Character/PlayerCharacter.h"
 
-#pragma region Input
-#include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Characters/Player/Weapons/WeaponManagerComponent.h"
+#include "Characters/Player/Weapons/WeaponMasteryComponent.h"
+
+#pragma region Input
+#include "EnhancedInputSubsystems.h"
+#include "EnhancedInputComponent.h"
 #include "Core/PRPlayerController.h"
 #include "Characters/Player/Config/InputConfig.h"
 #pragma endregion
@@ -14,6 +16,14 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Interface/Characters/InteractionInterface.h"
 
+#include "Stats/StatComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "UI/PlayerDeath/PlayerDeathWidget.h"
+#include <Kismet/GameplayStatics.h>
+
+// ========================================================
+// 언리얼 기본 생성 및 초기화
+// ========================================================
 APlayerCharacter::APlayerCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -34,6 +44,7 @@ APlayerCharacter::APlayerCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0, 360, 0);
 
 	WeaponManager = CreateDefaultSubobject<UWeaponManagerComponent>(TEXT("WeaponManager"));
+	WeaponMastery = CreateDefaultSubobject<UWeaponMasteryComponent>(TEXT("WeaponMastery"));
 
 
 #pragma region 캡쳐 컴포넌트 관련
@@ -46,10 +57,6 @@ APlayerCharacter::APlayerCharacter()
 	PortraitCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
 #pragma endregion
 }
-
-// ========================================================
-// 언리얼 기본 생성 및 초기화
-// ========================================================
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -94,19 +101,49 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			EIC->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ThisClass::EquipWeapon);
 		}
 
+		UInputAction* AttackAction = InputConfig->GetAction(EHumanoidInput::Attack); // Enum 이름 확인 필요
+		if (AttackAction)
+		{
+			EIC->BindAction(AttackAction, ETriggerEvent::Started, this, &ThisClass::AttackInput);
+		}
+
 		UInputAction* StatAction = InputConfig->GetAction(EHumanoidInput::Stat);
 		if (StatAction) EIC->BindAction(StatAction, ETriggerEvent::Completed, this, &ThisClass::ViewStat);
 	}
 }
-// ========================================================
-// 인터렉션 관련
-// ========================================================
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	if (bEnableRayTrace) {
 		TraceForInteraction();
 	}
 }
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (GetMesh()) {
+		AnimInstance = GetMesh()->GetAnimInstance();	// ABP 객체 가져오기		
+	}
+
+	/*
+	* 25/12/17 코드 추가 : 변경자 천수호
+	* 변경 내용 : 현재 시작시 무기가 장착이 안되는 문제가 있어서 추가함(강제로 1 누른것과 같은 효과)
+	*/
+	EquipWeapon(1.f);
+	IsDeath = false;
+
+#pragma region 캡쳐 컴포넌트 관련
+	if (PortraitCaptureComponent) {
+		TArray<AActor*> ActorsToShow;
+		ActorsToShow.Add(this);
+		PortraitCaptureComponent->ShowOnlyActors = ActorsToShow;
+		PortraitCaptureComponent->bCaptureEveryFrame = false;
+	}
+#pragma endregion
+}
+// ========================================================
+// 인터렉션 관련
+// ========================================================
 void APlayerCharacter::TraceForInteraction()
 {
 	FHitResult Hit;
@@ -146,26 +183,9 @@ void APlayerCharacter::InputInteract()
 
 	IInteractionInterface::Execute_Interact(InteractionActor, this);
 }
-
-void APlayerCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	if (GetMesh())
-	{
-		AnimInstance = GetMesh()->GetAnimInstance();	// ABP 객체 가져오기		
-	}
-
-#pragma region 캡쳐 컴포넌트 관련
-	if (PortraitCaptureComponent) {
-		TArray<AActor*> ActorsToShow;
-		ActorsToShow.Add(this);
-		PortraitCaptureComponent->ShowOnlyActors = ActorsToShow;
-		PortraitCaptureComponent->bCaptureEveryFrame = false;
-	}
-#pragma endregion
-}
-
+// ========================================================
+// Input
+// ========================================================
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -235,6 +255,22 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	// 4. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
 	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
 
+	// 맵에서 해당 무기의 콤보 데이터 가져오기
+	if (WeaponComboMap.Contains(TargetCode))
+	{
+		FWeaponComboData Data = WeaponComboMap[TargetCode];
+
+		// 1. 몽타주 교체
+		CurrentComboMontage = Data.Montage;
+		// 2. 최대 콤보 수 교체 (3, 2, 4 등 설정값으로)
+		MaxCombo = Data.MaxComboCount;
+
+		// 3. 콤보 상태 초기화 (혹시 공격 중에 바꿀까봐)
+		CurrentCombo = 0;
+		bIsAttacking = false;
+		bIsNextAttackRequested = false;
+	}
+
 	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
 	switch (WeaponIndex)
 	{
@@ -265,6 +301,8 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	default:
 		return; // 1, 2, 3번이 아니면 아무것도 안 함
 	}
+
+	CurrentWeaponType = TargetCode;
 
 	// =============================================================
 	// 6. 실제 무기 교체 로직 (WeaponManager 활용)
@@ -313,9 +351,180 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 		}
 	}
 }
+void APlayerCharacter::AttackInput(const FInputActionValue& Value)
+{
+	// 몽타주가 없으면 공격 불가
+	if (!CurrentComboMontage) 
+	{
+		UE_LOG(LogTemp, Log, TEXT("몽타주가 없음"));
+		return;
+	}
+
+	if (bIsAttacking)
+	{
+		// 공격 중이라면 다음 공격 예약 (최대 콤보 안 넘었을 때만)
+		if (CurrentCombo < MaxCombo)
+		{
+			bIsNextAttackRequested = true;
+		}
+	}
+	else
+	{
+		// 공격 시작
+		PlayComboAttack();
+	}
+}
 void APlayerCharacter::ViewStat()
 {
 	if (APRPlayerController* PC = GetController<APRPlayerController>()) {
 		PC->HandleStatInput();
 	}
+}
+// ========================================================
+// Combat & Combo
+// ========================================================
+void APlayerCharacter::PlayComboAttack()
+{
+	// 0. 몽타주가 없거나 애님 인스턴스가 없으면 취소
+	if (!CurrentComboMontage) return;
+
+	UAnimInstance* AnimInst = GetMesh()->GetAnimInstance();
+	if (!AnimInst) return;
+
+	// =============================================================
+	// 상황 1: 아무 몽타주도 재생 중이 아닐 때 (1타 공격 시작)
+	// =============================================================
+	if (!AnimInst->IsAnyMontagePlaying())
+	{
+		bIsAttacking = true;
+		CurrentCombo = 1; // 1타부터 시작
+
+		// 몽타주 재생 시작
+		AnimInst->Montage_Play(CurrentComboMontage);
+
+		// "Attack1" 섹션 재생
+		FName SectionName = *FString::Printf(TEXT("Attack%d"), CurrentCombo);
+		AnimInst->Montage_JumpToSection(SectionName, CurrentComboMontage);
+
+		// [중요] 종료 델리게이트는 '처음 시작할 때' 한 번만 걸어주면 됩니다.
+		FOnMontageEnded EndDelegate;
+		EndDelegate.BindUObject(this, &ThisClass::OnAttackMontageEnded);
+		AnimInst->Montage_SetEndDelegate(EndDelegate, CurrentComboMontage);
+	}
+	// =============================================================
+	// 상황 2: 몽타주가 재생 중이고, 그게 내 무기 몽타주라면 (콤보 연계)
+	// =============================================================
+	else if (AnimInst->GetCurrentActiveMontage() == CurrentComboMontage)
+	{
+		// 콤보 횟수 증가 (예: 1 -> 2)
+		// MaxCombo를 넘지 않게 안전장치 (Clamp)
+		CurrentCombo = FMath::Clamp(CurrentCombo + 1, 1, MaxCombo);
+
+		// 다음 섹션 이름 만들기 (Attack2, Attack3...)
+		FName SectionName = *FString::Printf(TEXT("Attack%d"), CurrentCombo);
+
+		// 해당 섹션으로 점프 (이게 SectionJumpForCombo 역할)
+		AnimInst->Montage_JumpToSection(SectionName, CurrentComboMontage);
+	}
+}
+
+void APlayerCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// 몽타주가 끝났으니 상태 초기화
+	bIsAttacking = false;
+	bIsNextAttackRequested = false;
+	CurrentCombo = 0;
+}
+
+void APlayerCharacter::CheckComboInput()
+{
+	if (bIsNextAttackRequested)
+	{
+		bIsNextAttackRequested = false;
+		PlayComboAttack(); // 다음 타격 실행
+	}
+}
+
+void APlayerCharacter::ApplyAttackDamage()
+{
+
+}
+
+void APlayerCharacter::OnAttackEnable(bool bEnable)
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->AttackEnable(bEnable);
+	}
+}
+
+
+void APlayerCharacter::AddExp(float Amount)
+{
+	if(WeaponMastery) WeaponMastery->AddKillCount(CurrentWeaponType);
+	
+	Super::AddExp(Amount);
+}
+void APlayerCharacter::ReceiveDamage(float DamageAmount)
+{
+	if (bIsInvincible) return;
+	//if (!StatComponent) return;
+	Super::ReceiveDamage(DamageAmount);
+
+	if (StatComponent->GetStatCurrent(EFullStats::Health) <= 0.f) Die();
+}
+void APlayerCharacter::Die()
+{
+	if (IsDeath == false && AnimInstance.IsValid()) {
+		IsDeath = !IsDeath;
+		PlayAnimMontage(DeathMontage);
+		GetCharacterMovement()->DisableMovement();
+		GetController()->SetIgnoreMoveInput(true);
+	}
+
+}
+void APlayerCharacter::ShowDeathUI()
+{
+	if (YOUDIEWidget) return;
+
+	if (YOUDIEWidgetClass) {
+		YOUDIEWidget = CreateWidget<UPlayerDeathWidget>(GetWorld(), YOUDIEWidgetClass);
+		if (YOUDIEWidget) 
+			YOUDIEWidget->AddToViewport(10);
+			YOUDIEWidget->PlayDeathAnimation();
+	}
+	
+	// 시간 느려짐
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.5f);
+}
+void APlayerCharacter::RespawnPlayer()
+{
+	IsDeath = false;
+	// 죽었을 때 느려진 시간 복구
+	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.f);
+	if (YOUDIEWidget) {
+		YOUDIEWidget->RemoveFromParent();
+		YOUDIEWidget = nullptr;
+	}
+
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Capsule->SetCollisionResponseToAllChannels(ECR_Block);
+	Capsule->SetCollisionProfileName(TEXT("Pawn"));
+
+	USkeletalMeshComponent* Skel = GetMesh();
+	Skel->SetSimulatePhysics(false);
+
+	Skel->AttachToComponent(Capsule, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	Skel->SetRelativeLocation(FVector(0, 0, -90));
+	Skel->SetRelativeRotation(FRotator(0, -90, 0));
+	Skel->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	GetCharacterMovement()->SetComponentTickEnabled(true);
+
+	// 마지막으로 저장된 위치(만약 저장이 한번도 안되었으면 기본 시작위치), 체/스태미너 초기화
+	SetActorLocation(SpawnLocation);
+	StatComponent->ChangeStatCurrent(EFullStats::Health, StatComponent->GetStatMax(EFullStats::Health));
+	StatComponent->ChangeStatCurrent(EFullStats::Stamina, StatComponent->GetStatMax(EFullStats::Stamina));
 }

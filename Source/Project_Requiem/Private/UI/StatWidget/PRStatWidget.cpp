@@ -56,7 +56,7 @@ void UPRStatWidget::InitializeStatValues()
     FString ExpString = FString::Printf(TEXT("%.0f"), CurrentExp); // 소수점 없이 정수로 표시
     SoulValueText->SetText(FText::FromString(ExpString));
 
-    //StatRenderList->HiddenButton();
+    StatRenderList->HiddenButton();
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Strength, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Strength));
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Dexterity, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Dexterity));
 
