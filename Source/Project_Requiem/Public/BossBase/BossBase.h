@@ -203,6 +203,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
 	float MeleeAttackInterval = 1.5f; 
 
+	// 공격 중 이동 잠금
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
+	bool bMovementLocked = false;
+
+	void LockMovement();
+	void UnlockMovement();
+
 	// 쿨타임 체크
 	float TimeSinceLastMeleeAttack = 0.0f;
 
@@ -285,6 +292,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (EditCondition = "bUsePhaseSystem"))
 	float Phase2_MeleeDamageMultiplier = 1.5f; 
 
+	// 보스 페이즈 시 범위 공격 계수
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase|AOE")
+	float PhaseChangeAoERadius = 250.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase|AOE")
+	float PhaseChangeAoEDamage = 40.0f;
+
 public:
 	
 	UFUNCTION(BlueprintNativeEvent, Category = "Boss|Phase")
@@ -295,6 +309,10 @@ public:
 	// 페이즈 연출이 끝났을 때
 	UFUNCTION(BlueprintCallable, Category = "Boss|Phase")
 	void FinishPhaseChange();
+
+	// 페이즈 전환 AoE 공격
+	UFUNCTION(BlueprintCallable, Category = "Boss|Phase|AOE")
+	void ApplyPhaseChangeAOE();
 
 	// 애님 노티파이에서 호출할 실제 데미지 적용 함수
 	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
@@ -319,7 +337,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
 	void StartCurrentPatternInvulnerability();
 
-	
+	// 원거리 몽타주 끝났을 때 이동 가능
+	UFUNCTION()
+	void OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 protected:
 	// 애니메이션 몽타주 포인터
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")

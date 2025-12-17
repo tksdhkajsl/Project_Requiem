@@ -373,6 +373,31 @@ void ABossBase::FinishPhaseChange()
 	}
 }
 
+// 페이즈 전환 범위 공격 실행
+void ABossBase::ApplyPhaseChangeAOE()
+{
+	if (CurrentState == EBossState::Dead) return;
+	if (!GetWorld()) return;
+
+	if (PhaseChangeAoERadius <= 0.0f || PhaseChangeAoEDamage <= 0.0f) return;
+
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+
+	UGameplayStatics::ApplyRadialDamage(
+		GetWorld(),
+		PhaseChangeAoEDamage,
+		GetActorLocation(),
+		PhaseChangeAoERadius,
+		nullptr,
+		IgnoreActors,
+		this,
+		GetController(),
+		true,
+		ECC_Visibility
+	);
+}
+
 void ABossBase::ApplyMeleeDamage()
 {
 	if (CurrentState == EBossState::Dead) return; 
@@ -522,7 +547,43 @@ void ABossBase::StartCurrentPatternInvulnerability()
 	StartInvulnerability(PendingInvulnerableDuration);
 }
 
+// 원거리 공격 끝나면 이동 풀기
+void ABossBase::OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage == RangedAttackMontage)
+	{
+		UnlockMovement();
+	}
+}
 
+
+
+void ABossBase::LockMovement()
+{
+	if (bMovementLocked) return;
+	if (CurrentState == EBossState::Dead) return;
+
+	bMovementLocked = true;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->DisableMovement();
+	}
+}
+
+void ABossBase::UnlockMovement()
+{
+	if (!bMovementLocked)return;
+	if (CurrentState == EBossState::Dead)return;
+
+	bMovementLocked = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->SetMovementMode(MOVE_Walking);
+	}
+}
 
 // 몽타주 있으면 몽타주 재생
 // 몽타주 없으면 즉시 발사
@@ -534,15 +595,13 @@ void ABossBase::PerformRangedAttack()
 	// 몽타주가 없으면 즉발
 	if (!RangedAttackMontage)
 	{
+		LockMovement();
 		ApplyRangedAttack();
+		UnlockMovement();
 		return;
 	}
 
-	// 발사 모션 중 이동 멈춤
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-	{
-		MoveComp->StopMovementImmediately();
-	}
+	LockMovement();
 
 	// 몽타주 재생
 	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
@@ -550,6 +609,11 @@ void ABossBase::PerformRangedAttack()
 		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
 		{
 			AnimInstance->Montage_Play(RangedAttackMontage);
+
+			// 몽타주 끝나면 이동 잠금 해제
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ABossBase::OnRangedMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, RangedAttackMontage);
 		}
 	}
 }
@@ -661,11 +725,8 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
 	LastPatternUseTime.FindOrAdd(Pattern) = Now;
 
-	// 공격중 이동 정지
-	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
-	{
-		MoveComp->StopMovementImmediately();
-	}
+	//이동 중지
+	LockMovement();
 
 	// 몽타주 있으면 재생, 실제 패턴은 노티파이에서 처리
 	if (Data->Montage)
@@ -732,6 +793,8 @@ void ABossBase::TryPlayHitReact()
 
 void ABossBase::FinishCurrentPattern()
 {
+	UnlockMovement();
+
 	bIsExecutingPattern = false;
 	CurrentPattern = EBossPattern::None;
 
