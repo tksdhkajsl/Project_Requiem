@@ -285,6 +285,12 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		return 0.0f;
 	}
 
+	// 무적이면 데미지 무시
+	if (bIsInvulnerable)
+	{
+		return 0.0f;
+	}
+
 	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
 
 	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
@@ -407,7 +413,7 @@ void ABossBase::PerformMeleeAttack()
 	{
 		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 		{
-			if (!AnimInstance->IsAnyMontagePlaying())
+			if (!AnimInstance->Montage_IsPlaying(MeleeAttackMontage))
 			{
 				AnimInstance->Montage_Play(MeleeAttackMontage);
 			}
@@ -457,6 +463,66 @@ void ABossBase::ApplyRangedAttackFromSocket(FName SocketName)
 }
 
 
+// 무적 능력
+void ABossBase::StartInvulnerability(float Duration)
+{
+	if (Duration <= 0.0f) return;
+	if (CurrentState == EBossState::Dead) return;
+
+	bIsInvulnerable = true;
+
+	// 이미 무적이면 남은 시간 연장
+	GetWorldTimerManager().ClearTimer(InvulnerableTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		InvulnerableTimerHandle,
+		this,
+		&ABossBase::EndInvulnerability,
+		Duration,
+		false
+	);
+}
+
+void ABossBase::EndInvulnerability()
+{
+	bIsInvulnerable = false;
+}
+
+// 범위 공격
+void ABossBase::ApplyCurrentPatternAOE()
+{
+	if (CurrentState == EBossState::Dead) return;
+	if (!GetWorld()) return;
+
+	const float Radius = PendingAoERadius;
+	const float Damage = PendingAoEDamage;
+
+	if (Radius <= 0.0f || Damage <= 0.0f) return;
+
+	TArray<AActor*> IgnoreActors;
+	IgnoreActors.Add(this);
+
+	AController* InstigatorController = GetController();
+
+	UGameplayStatics::ApplyRadialDamage(
+		GetWorld(),
+		Damage,
+		GetActorLocation(),
+		Radius,
+		nullptr,
+		IgnoreActors,
+		this,
+		InstigatorController,
+		true,
+		ECC_Visibility
+	);
+}
+
+void ABossBase::StartCurrentPatternInvulnerability()
+{
+	StartInvulnerability(PendingInvulnerableDuration);
+}
+
+
 
 // 몽타주 있으면 몽타주 재생
 // 몽타주 없으면 즉시 발사
@@ -481,7 +547,7 @@ void ABossBase::PerformRangedAttack()
 	// 몽타주 재생
 	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 	{
-		if (!AnimInstance->IsAnyMontagePlaying())
+		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
 		{
 			AnimInstance->Montage_Play(RangedAttackMontage);
 		}
@@ -585,6 +651,10 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	const FBossPatternData* Data = FindPatternData(Pattern);
 	if (!Data) return;
 
+	PendingAoERadius = Data->AoERadius;
+	PendingAoEDamage = Data->AoEDamage;
+	PendingInvulnerableDuration = Data->InvulnerableDuration;
+
 	bIsExecutingPattern = true;
 	CurrentPattern = Pattern;
 
@@ -602,11 +672,11 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	{
 		if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
 		{
-			if (!AnimInstance->IsAnyMontagePlaying())
+			if (!AnimInstance->Montage_IsPlaying(Data->Montage))
 			{
 				AnimInstance->Montage_Play(Data->Montage);
-				return;
 			}
+			return;
 		}
 	}
 

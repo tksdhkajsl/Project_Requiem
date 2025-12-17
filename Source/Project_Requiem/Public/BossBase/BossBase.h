@@ -110,6 +110,18 @@ struct FBossPatternData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UAnimMontage* Montage = nullptr;
 
+	// 보스 주변 범위 공격(AoE)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float AoERadius = 250.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float AoEDamage = 40.0f;
+
+	// 무적 지속시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float InvulnerableDuration = 0.0f;
+	
+
 };
 
 
@@ -295,7 +307,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
 	void ApplyRangedAttackFromSocket(FName SocketName); 
 
-	
+	UFUNCTION(BlueprintCallable, Category = "Boss|Invuln")
+	void StartInvulnerability(float Duration);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Invuln")
+	void EndInvulnerability();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	void ApplyCurrentPatternAOE();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
+	void StartCurrentPatternInvulnerability();
+
 	
 protected:
 	// 애니메이션 몽타주 포인터
@@ -328,7 +351,15 @@ protected:
 
 	void TryPlayHitReact();
 
+	// 무적 능력
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bIsInvulnerable = false;
 
+	FTimerHandle InvulnerableTimerHandle;
+
+	float PendingAoERadius = 0.0f;
+	float PendingAoEDamage = 0.0f;
+	float PendingInvulnerableDuration = 0.0f;
 
 public:
 
