@@ -59,10 +59,10 @@ void AEnemyCharacter::BeginPlay()
 void AEnemyCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
+    
     if (CurrentState == EEnemyState::Dead) return;
 
-    // HP바 빌보드 및 최적화
+    // HP바 빌보드 처리
     if (HPWidgetComponent)
     {
         APlayerController* PC = GetWorld()->GetFirstPlayerController();
@@ -72,6 +72,7 @@ void AEnemyCharacter::Tick(float DeltaTime)
             PC->GetPlayerViewPoint(CamLoc, CamRot);
 
             float Dist = FVector::Dist(CamLoc, GetActorLocation());
+            // 20m 이내이고 체력이 있을 때만 보임
             bool bShow = (Dist < 2000.f) && (StatComponent->GetStatCurrent(EFullStats::Health) > 0.f);
 
             if (HPWidgetComponent->IsVisible() != bShow)
@@ -116,12 +117,12 @@ float AEnemyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& Damage
         // 사망 처리
         if (StatComponent->GetStatCurrent(EFullStats::Health) <= KINDA_SMALL_NUMBER)
         {
-            HPWidgetComponent->SetVisibility(false);
             Die();
         }
         else if (CurrentState != EEnemyState::Attack)
         {
-            CurrentState = EEnemyState::Chase; // 피격 시 추격
+            // 맞으면 추격 시작 (패트롤 대기 중이었다면 취소됨)
+            CurrentState = EEnemyState::Chase;
         }
     }
     return ActualDamage;
@@ -132,6 +133,7 @@ void AEnemyCharacter::Die()
     if (CurrentState == EEnemyState::Dead) return;
     CurrentState = EEnemyState::Dead;
 
+    // 경험치 지급
     if (LastHitInstigator.IsValid())
     {
         if (ABaseCharacter* PlayerBase = Cast<ABaseCharacter>(LastHitInstigator->GetPawn()))
@@ -140,12 +142,33 @@ void AEnemyCharacter::Die()
         }
     }
 
-    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    if (AAIController* AIC = Cast<AAIController>(GetController())) AIC->StopMovement();
+    // AI 정지
+    if (AAIController* AIC = Cast<AAIController>(GetController()))
+    {
+        AIC->StopMovement();
+    }
 
-    SetActorHiddenInGame(true); // Destroy 대신 숨김
-    Super::Die();
+    // 1. 캡슐 충돌 끄기
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // 2. 래그돌 켜기
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+    GetMesh()->SetSimulatePhysics(true);
+
+    // 3. HP바 숨김
+    if (HPWidgetComponent) HPWidgetComponent->SetVisibility(false);
+
+    // 4. 3~5초 뒤 시체 숨기기 타이머 설정    
+    GetWorldTimerManager().SetTimer(DeadTimerHandle, this, &AEnemyCharacter::HideBody, RagdollWaitTime, false);
+}
+
+//시체 안 보임 처리
+void AEnemyCharacter::HideBody()
+{
+    SetActorHiddenInGame(true);
+    GetMesh()->SetSimulatePhysics(false); // 물리 꺼서 최적화
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 // =================================================================
@@ -153,26 +176,41 @@ void AEnemyCharacter::Die()
 // =================================================================
 void AEnemyCharacter::ResetEnemy()
 {
+    // 숨김 타이머 및 패트롤 타이머 취소
+    GetWorldTimerManager().ClearTimer(DeadTimerHandle);
+    GetWorldTimerManager().ClearTimer(PatrolTimerHandle);
+
+    // 1. 래그돌 끄기 & 메시 복구
+    GetMesh()->SetSimulatePhysics(false);
+    GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필
+    GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+    // 메시를 캡슐 안으로 다시 정렬 (중요)
+    GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+    GetMesh()->SetRelativeLocation(FVector(0.0f, 0.0f, -88.0f)); // 캐릭터에 맞는 Z값
+    GetMesh()->SetRelativeRotation(FRotator(0.0f, -90.0f, 0.0f));
+
+    // 2. 캡슐 충돌 켜기
+    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    // 3. 위치 복구
     SetActorLocation(HomeLocation);
     SetActorRotation(HomeRotation);
 
+    // 4. 스탯 및 UI 복구
     if (StatComponent)
     {
         float MaxHP = StatComponent->GetStatMax(EFullStats::Health);
         StatComponent->ChangeStatCurrent(EFullStats::Health, MaxHP);
-
-        // [중요] UI 100%로 갱신
         if (HPWidget) HPWidget->UpdateHP(MaxHP, MaxHP);
     }
 
     CurrentState = EEnemyState::Patrol;
     LastHitInstigator = nullptr;
 
+    // 5. 다시 보이기
     SetActorHiddenInGame(false);
     if (HPWidgetComponent) HPWidgetComponent->SetVisibility(true);
-
-    GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
     MoveToRandomPatrolPoint();
 }
@@ -182,69 +220,55 @@ void AEnemyCharacter::ResetEnemy()
 // =================================================================
 void AEnemyCharacter::UpdateAIState()
 {
-    // 1. 필수 포인터 가져오기
     ACharacter* Player = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
     AAIController* AIC = Cast<AAIController>(GetController());
 
     if (!Player || !AIC) return;
 
-    // =========================================================
-    // [핵심] 공격 애니메이션 재생 중일 때의 처리
-    // =========================================================
+    // [중요] 공격 중이면 이동 정지 (미끄러짐 방지)
     if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
     {
-        // 1. 이동 멈춤 (발이 미끄러지는 현상 방지)
         AIC->StopMovement();
 
-        // 2. 플레이어 쪽으로 회전 (공격 도중 플레이어가 옆으로 피해도 바라보게 함)
+        // 공격 중 플레이어 바라보기
         FVector Dir = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-        Dir.Z = 0.0f; // 높낮이 무시 (평면 회전)
-
-        // 부드럽게 회전 (InterpSpeed 10~20 추천)
+        Dir.Z = 0.0f;
         FRotator TargetRot = FRotator(0, Dir.Rotation().Yaw, 0);
         SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 15.0f));
 
-        // 3. 여기서 함수 종료! (아래의 추격/배회 로직이 실행되지 않도록 함)
-        return;
+        return; // 로직 종료
     }
 
-    // =========================================================
-    // [일반 상태] 애니메이션이 안 나올 때만 실행됨
-    // =========================================================
-
-    // 거리 계산
     float Distance = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
 
-    // 1. 상태 결정 (State Decision)
+    // 상태 변경 체크
+    EEnemyState NewState = CurrentState;
     if (Distance <= AttackRange)
     {
-        CurrentState = EEnemyState::Attack;
+        NewState = EEnemyState::Attack;
     }
     else if (Distance <= DetectionRange)
     {
-        CurrentState = EEnemyState::Chase;
+        NewState = EEnemyState::Chase;
     }
     else
     {
-        CurrentState = EEnemyState::Patrol;
+        NewState = EEnemyState::Patrol;
     }
 
-    // 2. 상태별 행동 (State Action)
+    // 상태가 바뀌면 패트롤 대기 타이머 취소 (대기하다가 쫓아가야 하므로)
+    if (CurrentState == EEnemyState::Patrol && NewState != EEnemyState::Patrol)
+    {
+        GetWorldTimerManager().ClearTimer(PatrolTimerHandle);
+    }
+    CurrentState = NewState;
+
+    // 상태별 행동
     switch (CurrentState)
     {
     case EEnemyState::Attack:
-        AIC->StopMovement(); // 공격 사거리 내에서는 일단 정지
-
-        // 공격 준비 (회전)
-        {
-            FVector Dir = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-            Dir.Z = 0.0f;
-            FRotator TargetRot = FRotator(0, Dir.Rotation().Yaw, 0);
-            SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 15.0f));
-        }
-
-        // 공격 실행 (쿨타임 X, 몽타주 X 일때만)
-        // 위에서 IsAnyMontagePlaying 체크를 했으므로, 여기서는 쿨타임만 보면 됨
+        AIC->StopMovement();
+        // 공격 가능하면 수행
         if (!GetWorldTimerManager().IsTimerActive(AttackTimerHandle))
         {
             PerformAttack();
@@ -252,16 +276,18 @@ void AEnemyCharacter::UpdateAIState()
         break;
 
     case EEnemyState::Chase:
-        // 바짝 추격 (5.0f 앞까지)
-        AIC->MoveToActor(Player, 5.0f);
+        AIC->MoveToActor(Player, 5.0f); // 바짝 추격
         break;
 
     case EEnemyState::Patrol:
-        // 목적지 도착했으면(Idle) 새로운 랜덤 위치로 이동
-        // #include "Navigation/PathFollowingComponent.h" 필요
         if (AIC->GetMoveStatus() == EPathFollowingStatus::Idle)
         {
-            MoveToRandomPatrolPoint();
+            // 도착했는데 타이머가 안 돌고 있다면 3~5초 대기 예약
+            if (!GetWorldTimerManager().IsTimerActive(PatrolTimerHandle))
+            {
+                float WaitTime = FMath::RandRange(3.0f, 5.0f);
+                GetWorldTimerManager().SetTimer(PatrolTimerHandle, this, &AEnemyCharacter::MoveToRandomPatrolPoint, WaitTime, false);
+            }
         }
         break;
     }
@@ -287,23 +313,20 @@ void AEnemyCharacter::MoveToRandomPatrolPoint()
 // =================================================================
 void AEnemyCharacter::PerformAttack()
 {
-    // [중요] 여기서는 애니메이션만 실행! 데미지는 주지 않음.
+    // 애니메이션만 재생 (데미지는 주지 않음)
     if (AttackMontage)
     {
         PlayAnimMontage(AttackMontage);
     }
-
     GetWorldTimerManager().SetTimer(AttackTimerHandle, AttackDelay, false);
 }
 
 void AEnemyCharacter::AttackHitCheck()
 {
-    // 1. 공격 범위 설정 (전방 100cm, 반경 50cm)
     FVector Start = GetActorLocation() + GetActorForwardVector() * 50.0f;
     FVector End = Start + GetActorForwardVector() * 100.0f;
     float Radius = 50.0f;
 
-    // 2. 충돌 검사
     FHitResult HitResult;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
@@ -313,15 +336,12 @@ void AEnemyCharacter::AttackHitCheck()
         ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params
     );
 
-    // [디버그] 공격 범위 표시 (빨간 원)
     // DrawDebugSphere(GetWorld(), End, Radius, 12, FColor::Red, false, 1.0f);
 
-    // 3. 데미지 적용
     if (bHit && HitResult.GetActor())
     {
-        // Tag 대신 Cast를 사용하여 플레이어인지 확인 (Tag 설정 안 해도 됨)
+        // Cast를 사용하여 Tag 없이도 플레이어 판정
         APlayerCharacter* Player = Cast<APlayerCharacter>(HitResult.GetActor());
-
         if (Player)
         {
             UGameplayStatics::ApplyDamage(
