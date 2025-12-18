@@ -158,6 +158,11 @@ void ABossBase::UpdateIdle(float DeltaTime)
 
 void ABossBase::UpdateChase(float DeltaTime)
 {
+	if (bMovementLocked)
+	{
+		return;
+	}
+
 	if (!TargetCharacter)
 	{
 		SetBossState(EBossState::Idle);
@@ -215,9 +220,20 @@ void ABossBase::UpdateAttack(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
+	// 근접 몽타주 재생중인지 체크
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	const bool bMeleePlaying =
+		(AnimInstance && MeleeAttackMontage && AnimInstance->Montage_IsPlaying(MeleeAttackMontage));
+
+	if (bMeleePlaying)
+	{
+		return;
+	}
+
 	if (DistanceToTarget > MeleeZoneMaxRange && DistanceToTarget < RangedZoneMinRange)
 	{
-		if (!bIsExecutingPattern)
+		//근접 몽타주 재생 중에는 chase로 못넘어가게 막기
+		if (!bIsExecutingPattern && !bMeleePlaying)
 		{
 			UnlockMovement();
 			SetBossState(EBossState::Chase);
