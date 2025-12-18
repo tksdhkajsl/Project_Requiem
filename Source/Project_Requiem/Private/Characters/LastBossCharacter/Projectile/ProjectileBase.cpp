@@ -39,10 +39,17 @@ void AProjectileBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// 투사체 액터 활성화
 	ActivateProjectile();
 
 	OnActorBeginOverlap.AddDynamic(this, &AProjectileBase::OnPlayerBeginOverlap);
 	OnActorEndOverlap.AddDynamic(this, &AProjectileBase::OnPlayerEndOverlap);
+
+	if (!LastBoss.IsValid())
+		LastBoss = Cast<ALastBossCharacter>(GetOwner());
+
+	if (LastBoss.IsValid())
+		LastBoss->OnLastBossChangedPhase.AddDynamic(this, &AProjectileBase::DeactivateProjectile);
 
 	// 틱 타이머
 	GetWorld()->GetTimerManager().ClearTimer(TickTimerHandle);
@@ -58,6 +65,7 @@ void AProjectileBase::BeginPlay()
 
 void AProjectileBase::ActivateTick()
 {
+	// 이동 함수
 	MoveProjectile();
 
 	// bActiveTickDamage가 true면 틱마다 오버랩 중인 플레이어에게 데미지 적용
@@ -105,6 +113,7 @@ void AProjectileBase::DeactivateProjectile()
 		GetWorld()->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 
+	// 저장된 오버랩 액터 초기화
 	OverlappingTargets.Empty();
 
 	//UE_LOG(LogTemp, Log, TEXT("투사체 지속시간에 의해 스폰된 액터가 삭제되었습니다"));
@@ -116,11 +125,9 @@ void AProjectileBase::OnPlayerBeginOverlap(AActor* OverlappedActor, AActor* Othe
 	// 유효성 검사
 	if (!bApplyDamageActive || !OtherActor || OtherActor == OverlappedActor)
 		return;
-
-	if (!LastBoss.IsValid())
-	{
-		LastBoss = Cast<ALastBossCharacter>(GetOwner());
-	}
+	
+	// 오버랩된 액터 저장
+	OverlappingTargets.Add(OtherActor);
 
 	if (LastBoss.IsValid())
 	{
@@ -134,14 +141,14 @@ void AProjectileBase::OnPlayerBeginOverlap(AActor* OverlappedActor, AActor* Othe
 
 void AProjectileBase::OnPlayerEndOverlap(AActor* OverlappedActor, AActor* OtherActor)
 {
-
+	OverlappingTargets.Empty();
 }
 
 void AProjectileBase::ApplyDamageToPlayer(AActor* OtherActor)
 {
+	// 유효성 검사
 	if (!OtherActor)
 		return;
-
 	APawn* Target = Cast<APawn>(OtherActor);
 	if (!Target || !Target->IsPlayerControlled())
 		return;
@@ -149,8 +156,10 @@ void AProjectileBase::ApplyDamageToPlayer(AActor* OtherActor)
 	float AttackDamage = 0.0f;
 	if (UStatComponent* BossStat = LastBoss->GetStatComponent())
 	{
+		// 스폰된 액터의 데미지 계산식
 		AttackDamage = BossStat->PhyAtt * Damagemagnification;
-		UE_LOG(LogTemp, Log, TEXT("AttackDamage : %f"), AttackDamage);
+
+		//UE_LOG(LogTemp, Log, TEXT("AttackDamage : %f"), AttackDamage);
 	}
 
 	LastBoss->Attack(OtherActor, AttackDamage);
@@ -165,6 +174,7 @@ void AProjectileBase::MoveProjectile()
 	if (TickMoveDistance <= 0.0f)
 		return;
 
+	// 투사체 이동 관련
 	FVector ForwardVector = GetActorForwardVector();
 	FVector NextLocation = GetActorLocation() + ForwardVector * TickMoveDistance;
 	FVector NewLocation = FMath::VInterpTo(

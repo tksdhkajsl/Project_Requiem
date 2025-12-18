@@ -63,7 +63,7 @@ EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& O
 		}
 		else if (Phase == 2)	// 보스의 페이즈2 몽타주 랜덤 출력
 		{
-			const TArray<UAnimMontage*>& MontageArr = LastBoss->GetPhaseTwoPatterns();
+			const TArray<UAnimMontage*> MontageArr = LastBoss->GetPhaseTwoPatterns();
 			if (MontageArr.IsValidIndex(RandomMontageNum))
 				MontageToPlay = MontageArr[RandomMontageNum];
 		}
@@ -84,7 +84,7 @@ EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& O
 		}
 		
 		const float PlayRate = 1.0f;
-		const float Duration = AnimInst->Montage_Play(MontageToPlay, PlayRate);
+		float Duration = AnimInst->Montage_Play(MontageToPlay, PlayRate);
 		if (Duration > 0.0f)
 		{
 			FOnMontageEnded OnMontageEnded;
@@ -92,6 +92,9 @@ EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& O
 			AnimInst->Montage_SetEndDelegate(OnMontageEnded, MontageToPlay);
 
 			CachedOwnerComp = &OwnerComp;
+
+			LastBoss->OnLastBossChangedPhase.RemoveDynamic(this, &UBTTaskNodeRunMontage::NextPhase);
+			LastBoss->OnLastBossChangedPhase.AddDynamic(this, &UBTTaskNodeRunMontage::NextPhase);
 
 			// 몽타주가 실행될 경우 비동기(지연)상태 반환
 			return EBTNodeResult::InProgress;
@@ -115,6 +118,18 @@ void UBTTaskNodeRunMontage::MontageEnded(UAnimMontage* Montage, bool bInterrupte
 	FinishLatentTask(*CachedOwnerComp.Get(), Result);
 
 	// 캐시 해제
+	CachedOwnerComp = nullptr;
+}
+
+void UBTTaskNodeRunMontage::NextPhase()
+{
+	if (LastBoss.IsValid())
+	{
+		LastBoss->OnLastBossChangedPhase.RemoveDynamic(this, &UBTTaskNodeRunMontage::NextPhase);
+	}
+
+	FinishLatentTask(*CachedOwnerComp.Get(), EBTNodeResult::Failed);
+	
 	CachedOwnerComp = nullptr;
 }
 

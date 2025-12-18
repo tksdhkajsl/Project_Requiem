@@ -11,6 +11,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);			// 경험치
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLastBossName, FText, BossName);		// 이름
 
+// 보스가 죽었을 경우 보낼 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossChangedPhase);	// 페이즈 변경
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossDead);			// 보스 죽음
+
 /**
  * 
  */
@@ -26,12 +30,13 @@ public:
 
 public:
 	// 델리게이트
-	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnApplyDamage OnApplyDamage;
-	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnApplyExp OnApplyExp;
-	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnLastBossName OnLastBossName;
+
+	FOnLastBossChangedPhase OnLastBossChangedPhase;
+	FOnLastBossDead	OnLastBossDead;
+
 
 public:
 	// 이동 위치
@@ -57,6 +62,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	inline int32 GetBossPhase() { return Phase; }
 
+	inline bool IsPhaseChanged() { return bPhaseChanged; }
+
 	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseOnePatterns() { return PhaseOnePatterns; }
 
 	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseTwoPatterns() { return PhaseTwoPatterns; }
@@ -70,6 +77,9 @@ protected:
 	// 투사체 스폰 위치
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<class USceneComponent> SpawnProjectileLocation = nullptr;;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh")
+	TObjectPtr<class USkeletalMesh> PhaseTwoSkeletalMesh = nullptr;
 
 	// 보스 상태에 따라 실행될 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
@@ -108,6 +118,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Information|Phase", meta = (ClampMin = "1", ClampMax = "2"))
 	int32 Phase = 1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information|Phase")
+	bool bPhaseChanged = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Information|Name")
 	FText BossName;
 
@@ -117,6 +130,5 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
 	TArray<TObjectPtr<class UAnimMontage>> PhaseTwoPatterns;
 private:
-
 	float MinHp = 0.0f;
 };

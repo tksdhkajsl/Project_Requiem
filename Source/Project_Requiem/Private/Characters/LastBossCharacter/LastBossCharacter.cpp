@@ -4,6 +4,7 @@
 #include "Characters/LastBossCharacter/LastBossCharacter.h"
 #include "ComponentSystems/Public/Stats/StatComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 
 ALastBossCharacter::ALastBossCharacter()
 {
@@ -36,6 +37,9 @@ void ALastBossCharacter::ReceiveDamage(float DamageAmount)
 
 	OnApplyDamage.Broadcast(DamageAmount);
 	Super::ReceiveDamage(DamageAmount);
+
+	if (GetStatComponent()->CurrHP < 0.0f)
+		Die();
 }
 
 float ALastBossCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -54,13 +58,33 @@ void ALastBossCharacter::Die()
 
 	if (Phase == 1)
 	{
+		// 페이즈1일 때 보스 사망 시 실행중 몽타주 중지
+		StopAnimMontage();
+
+		// 페이즈 증가
 		Phase++;
+		// 페이즈 넘어갈 때 체력 다시 회복
 		StatComponent->CurrHP = StatComponent->MaxHP;
+		// 저장된 페이즈2 스켈레탈 메시로 변경
+		GetMesh()->SetSkeletalMesh(PhaseTwoSkeletalMesh);
+		// 페이즈 변경 저장
+		bPhaseChanged = true;
+
+		// 페이즈 변경 델리게이트 
+		OnLastBossChangedPhase.Broadcast();
 	}
 	else if (Phase == 2)
 	{
+		StopAnimMontage();
+
+		// 사망 몽타주 출력
 		PlayAnimMontage(DieMontage);
+
+		// 경험치 드랍
 		ApplyExp(DropExp);
+
+		// 보스 사망 델리게이트
+		//OnLastBossDead.Broadcast();
 	}
 }
 

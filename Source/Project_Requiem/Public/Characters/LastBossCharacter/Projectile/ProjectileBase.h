@@ -20,15 +20,17 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+public:
+	// 투사체 비활성화
+	UFUNCTION()
+	void DeactivateProjectile();
+
 protected:
 	// 틱 활성화시 실행될 함수
 	void ActivateTick();
 
 	// 투사체 활성화
 	void ActivateProjectile();
-
-	// 투사체 비활성화
-	void DeactivateProjectile();
 
 	// 투사체 활성화 여부
 	inline bool IsActiveProjectile() { return bApplyDamageActive; }
@@ -64,7 +66,7 @@ protected:
 
 	// 투사체 정보
 	// 데미지 배율
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Damage", meta = (ClampMin = "1"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Damage", meta = (ClampMin = "0"))
 	float Damagemagnification = 1.0f;
 	// 히트시 투사체 비활성화 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Damage")
@@ -72,13 +74,14 @@ protected:
 	// 투사체 틱 레이트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
 	float TickRate = 0.0f;
-	// Tick 단위 투사체 이동 거리
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
-	float TickMoveDistance = 0.0f;
+	// 틱당 데미지 활성화
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
 	bool bActiveTickDamage = false;
-	// 투사체 지속시간
+	// Tick 단위 투사체 이동 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move", meta = (ClampMin = "0"))
+	float TickMoveDistance = 0.0f;
+	// 투사체 지속시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Life", meta = (ClampMin = "0"))
 	float LifeTime = 0.0f;
 
 private:

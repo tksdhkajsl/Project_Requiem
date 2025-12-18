@@ -24,6 +24,9 @@ public:
 private:
 	void MontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	UFUNCTION()
+	void NextPhase();
+
 private:
 	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
 	TWeakObjectPtr<class UBlackboardComponent> BlackBoardComp = nullptr;
