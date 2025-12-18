@@ -11,4 +11,7 @@ void UAnimNotify_BossInvulnStart::Notify(USkeletalMeshComponent* MeshComp, UAnim
 	{
 		Boss->StartCurrentPatternInvulnerability();
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("BossInvulnStart Notify Fired"));
+
 }

@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "BossBase.generated.h"
 
+
 class ABossProjectile;
 class UAnimMontage;
 
@@ -112,10 +113,10 @@ struct FBossPatternData
 
 	// 보스 주변 범위 공격(AoE)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float AoERadius = 250.0f;
+	float AoERadius = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float AoEDamage = 40.0f;
+	float AoEDamage = 0.0f;
 
 	// 무적 지속시간
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -354,6 +355,8 @@ public:
 	UFUNCTION()
 	void OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	
+
 protected:
 	// 애니메이션 몽타주 포인터
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
@@ -394,6 +397,7 @@ protected:
 	float PendingAoERadius = 0.0f;
 	float PendingAoEDamage = 0.0f;
 	float PendingInvulnerableDuration = 0.0f;
+
 
 public:
 

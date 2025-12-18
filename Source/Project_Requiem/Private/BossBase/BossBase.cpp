@@ -31,6 +31,7 @@ ABossBase::ABossBase()
 	{
 		MoveComp->MaxWalkSpeed = WalkSpeed;
 	}
+
 }
 
 void ABossBase::BeginPlay()
@@ -525,6 +526,7 @@ void ABossBase::StartInvulnerability(float Duration)
 	if (CurrentState == EBossState::Dead) return;
 
 	bIsInvulnerable = true;
+	
 
 	// 이미 무적이면 남은 시간 연장
 	GetWorldTimerManager().ClearTimer(InvulnerableTimerHandle);
@@ -540,6 +542,7 @@ void ABossBase::StartInvulnerability(float Duration)
 void ABossBase::EndInvulnerability()
 {
 	bIsInvulnerable = false;
+	
 }
 
 // 범위 공격
@@ -575,6 +578,9 @@ void ABossBase::ApplyCurrentPatternAOE()
 void ABossBase::StartCurrentPatternInvulnerability()
 {
 	StartInvulnerability(PendingInvulnerableDuration);
+
+	UE_LOG(LogTemp, Warning, TEXT("PendingInvulnerableDuration = %f"), PendingInvulnerableDuration);
+
 }
 
 // 원거리 공격 끝나면 이동 풀기
