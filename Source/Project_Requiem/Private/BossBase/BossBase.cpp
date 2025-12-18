@@ -311,6 +311,7 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
 
+	// 이벤트 : 보스바 갱신
 	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
 	if (CurrentHP <= 0.0f)
@@ -322,7 +323,7 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 			MoveComp->StopMovementImmediately();
 		}
 
-		// 사망 보상
+		// 이벤트 : 경험치 보상
 		OnBossDead.Broadcast(EXP);
 
 		return ActualDamage;
