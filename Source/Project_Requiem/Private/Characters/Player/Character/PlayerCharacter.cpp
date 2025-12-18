@@ -20,6 +20,9 @@
 #include "Components/CapsuleComponent.h"
 #include "UI/PlayerDeath/PlayerDeathWidget.h"
 #include <Kismet/GameplayStatics.h>
+#include "Components/SphereComponent.h"
+
+#include "UI/HUD/PRHUDWidget.h"
 
 // ========================================================
 // 언리얼 기본 생성 및 초기화
@@ -46,6 +49,11 @@ APlayerCharacter::APlayerCharacter()
 	WeaponManager = CreateDefaultSubobject<UWeaponManagerComponent>(TEXT("WeaponManager"));
 	WeaponMastery = CreateDefaultSubobject<UWeaponMasteryComponent>(TEXT("WeaponMastery"));
 
+	InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("Interactio Trigger Volume"));
+	InteractionTrigger->SetupAttachment(RootComponent);
+	InteractionTrigger->SetRelativeScale3D(FVector(10));
+	InteractionTrigger->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnInteractionTriggerOverlapBegin);
+	InteractionTrigger->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnInteractionTriggerOverlapEnd);
 
 #pragma region 캡쳐 컴포넌트 관련
 	PortraitCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PortraitCapture"));
@@ -100,6 +108,12 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			// Triggered로 설정하면 키를 누르는 순간 실행됩니다.
 			EIC->BindAction(EquipAction, ETriggerEvent::Triggered, this, &ThisClass::EquipWeapon);
 		}
+		UInputAction* PostionAction = InputConfig->GetAction(EHumanoidInput::EatPotion);
+		if (PostionAction)
+		{
+			// Triggered로 설정하면 키를 누르는 순간 실행됩니다.
+			EIC->BindAction(PostionAction, ETriggerEvent::Triggered, this, &ThisClass::EatPotion);
+		}
 
 		UInputAction* AttackAction = InputConfig->GetAction(EHumanoidInput::Attack); // Enum 이름 확인 필요
 		if (AttackAction)
@@ -109,6 +123,9 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		UInputAction* StatAction = InputConfig->GetAction(EHumanoidInput::Stat);
 		if (StatAction) EIC->BindAction(StatAction, ETriggerEvent::Completed, this, &ThisClass::ViewStat);
+
+		UInputAction* InteractAction = InputConfig->GetAction(EHumanoidInput::Interact);
+		if (InteractAction) EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &ThisClass::InputInteract);
 	}
 }
 void APlayerCharacter::Tick(float DeltaTime)
@@ -144,6 +161,29 @@ void APlayerCharacter::BeginPlay()
 // ========================================================
 // 인터렉션 관련
 // ========================================================
+void APlayerCharacter::OnInteractionTriggerOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!OtherActor || !OtherActor->Implements<UInteractionInterface>()) return;
+
+	InteractableActors.AddUnique(OtherActor);
+	bEnableRayTrace = true;
+}
+void APlayerCharacter::OnInteractionTriggerOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!OtherActor || !OtherActor->Implements<UInteractionInterface>()) return;
+
+	InteractableActors.Remove(OtherActor);
+	bEnableRayTrace = InteractableActors.Num() > 0;
+
+	if (!bEnableRayTrace) ClearCurrentInteraction();
+}
+void APlayerCharacter::ClearCurrentInteraction()
+{
+	if (!InteractionActor) return;
+
+	InteractionActor = nullptr;
+	UpdateInteractionPrompt();
+}
 void APlayerCharacter::TraceForInteraction()
 {
 	FHitResult Hit;
@@ -153,6 +193,7 @@ void APlayerCharacter::TraceForInteraction()
 	const float Length = (PlayerCamera->GetComponentLocation() - SpringArm->GetComponentLocation()).Length() + InteractionTraceLength;
 	const FVector End = Start + PlayerCamera->GetForwardVector() * Length;
 	GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.f, 0, 2.f);
 
 	AActor* NewActor = nullptr;
 	if (Hit.bBlockingHit) {
@@ -166,22 +207,26 @@ void APlayerCharacter::TraceForInteraction()
 
 	if (InteractionActor != NewActor) {
 		InteractionActor = NewActor;
-		UpdateInteractionUI();
+		bHasValidInteraction = InteractionActor ? true : false;
+		UpdateInteractionPrompt();
 	}
 }
-void APlayerCharacter::UpdateInteractionUI()
+void APlayerCharacter::UpdateInteractionPrompt()
 {
-	if (!InteractionActor) return;
-	if (!InteractionActor->Implements<UInteractionInterface>()) return;
+	if (!InteractionActor) {
+		OnInteractionPromptChanged.Broadcast(FText::GetEmpty());
+		return;
+	}
 
 	const FText Text = IInteractionInterface::Execute_GetInteractionText(InteractionActor, this);
+	OnInteractionPromptChanged.Broadcast(Text);
 }
 void APlayerCharacter::InputInteract()
 {
 	if (!InteractionActor) return;
 	if (!InteractionActor->Implements<UInteractionInterface>()) return;
 
-	IInteractionInterface::Execute_Interact(InteractionActor, this);
+	if(bHasValidInteraction) IInteractionInterface::Execute_Interact(InteractionActor, this);
 }
 // ========================================================
 // Input
@@ -467,8 +512,8 @@ void APlayerCharacter::AddExp(float Amount)
 }
 void APlayerCharacter::ReceiveDamage(float DamageAmount)
 {
-	if (bIsInvincible) return;
 	//if (!StatComponent) return;
+	if (bIsInvincible) return;
 	Super::ReceiveDamage(DamageAmount);
 
 	if (StatComponent->GetStatCurrent(EFullStats::Health) <= 0.f) Die();
@@ -497,16 +542,47 @@ void APlayerCharacter::ShowDeathUI()
 	// 시간 느려짐
 	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.5f);
 }
+void APlayerCharacter::AddPotion()
+{
+	HPPotion++;
+	OnPotionChanged.Broadcast(HPPotion);
+}
+void APlayerCharacter::EatPotion()
+{
+	if (0 < HPPotion) {
+		// 필요 시 포션 먹는 몽타쥬 재생
+		HPPotion--;
+		StatComponent->ChangeStatCurrent(EFullStats::Health, RestoreHP);
+		OnPotionChanged.Broadcast(HPPotion);
+	}
+}
+void APlayerCharacter::AddPotions(int32 Potion)
+{
+	HPPotion += Potion;
+	OnPotionChanged.Broadcast(HPPotion);
+}
 void APlayerCharacter::RespawnPlayer()
 {
 	IsDeath = false;
-	// 죽었을 때 느려진 시간 복구
 	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 1.f);
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC) {
+		PC->SetIgnoreMoveInput(false);
+		PC->SetIgnoreLookInput(false);
+
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = false;
+		PC->SetControlRotation(FRotator::ZeroRotator);
+	}
+
 	if (YOUDIEWidget) {
 		YOUDIEWidget->RemoveFromParent();
 		YOUDIEWidget = nullptr;
 	}
 
+	// 콜리전 및 물리 복구
 	UCapsuleComponent* Capsule = GetCapsuleComponent();
 	Capsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Capsule->SetCollisionResponseToAllChannels(ECR_Block);
@@ -514,6 +590,7 @@ void APlayerCharacter::RespawnPlayer()
 
 	USkeletalMeshComponent* Skel = GetMesh();
 	Skel->SetSimulatePhysics(false);
+	Skel->SetCollisionProfileName(TEXT("CharacterMesh"));
 
 	Skel->AttachToComponent(Capsule, FAttachmentTransformRules::SnapToTargetIncludingScale);
 	Skel->SetRelativeLocation(FVector(0, 0, -90));
@@ -521,10 +598,11 @@ void APlayerCharacter::RespawnPlayer()
 	Skel->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->SetComponentTickEnabled(true);
 
-	// 마지막으로 저장된 위치(만약 저장이 한번도 안되었으면 기본 시작위치), 체/스태미너 초기화
 	SetActorLocation(SpawnLocation);
+
 	StatComponent->ChangeStatCurrent(EFullStats::Health, StatComponent->GetStatMax(EFullStats::Health));
 	StatComponent->ChangeStatCurrent(EFullStats::Stamina, StatComponent->GetStatMax(EFullStats::Stamina));
 }

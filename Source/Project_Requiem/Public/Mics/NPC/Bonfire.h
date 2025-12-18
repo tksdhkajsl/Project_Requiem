@@ -26,7 +26,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* Mesh;
 
-	// [추가] 화톳불 휴식 시 띄울 위젯 클래스 (BP_BonfireUI 등을 에디터에서 넣으세요)
+	// [추가] 화톳불 휴식 시 띄울 위젯 클래스 (BP_BonfireUI 같은 거)
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> BonfireWidgetClass;
 

@@ -15,16 +15,50 @@ class USceneCaptureComponent2D;
 class UPlayerDeathWidget;
 struct FInputActionValue;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractionPromptChanged, const FText&, Text);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPotionChanged, int32, NewPotionCount);
+
+
 UCLASS()
 class PROJECT_REQUIEM_API APlayerCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
+	
+#pragma region 델리게이트
+public:
+	FOnInteractionPromptChanged OnInteractionPromptChanged;
+	FOnPotionChanged OnPotionChanged;
+#pragma endregion
 	
 #pragma region 언리얼 기본 생성 및 초기화
 public:
 	APlayerCharacter();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaTime) override;
+	
+	/*
+	 * 25/12/17 코드 추가 : 변경자 천수호
+	 * 변경 내용 : 인터렉션 가능한 액터들 모음
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Interaction")	
+	TArray<AActor*> InteractableActors;
+	/*
+	 * 25/12/17 코드 추가 : 변경자 천수호
+	 * 변경 내용 : 플레이어 주변으로 인터렉션이 가능한(InteractionInterface 상속받은) 액터가 들어옴
+	 */
+	UFUNCTION()
+	void OnInteractionTriggerOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	/*
+	 * 25/12/17 코드 추가 : 변경자 천수호
+	 * 변경 내용 : 플레이어 주변으로 인터렉션이 가능한(InteractionInterface 상속받은) 액터가 빠져나감
+	 */
+	UFUNCTION()
+	void OnInteractionTriggerOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	/*
+	 * 25/12/17 코드 추가 : 변경자 천수호
+	 * 변경 내용 : 플레이어 주변으로 인터렉션이 가능한(InteractionInterface 상속받은) 액터가 들어옴
+	 */
+	void ClearCurrentInteraction();
 protected:
 	virtual void BeginPlay() override;
 #pragma endregion
@@ -35,12 +69,15 @@ public:
 	bool bEnableRayTrace = false;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	float InteractionTraceLength = 200;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class USphereComponent* InteractionTrigger;
 private:
 	UPROPERTY()
 	AActor* InteractionActor = nullptr;
+	bool bHasValidInteraction = false;
 	// 인터렉션 용
 	void TraceForInteraction();
-	void UpdateInteractionUI();
+	void UpdateInteractionPrompt();
 	void InputInteract();
 #pragma endregion
 
@@ -58,7 +95,6 @@ public:
 	void AttackInput(const FInputActionValue& Value);
 
 	void ViewStat();
-
 #pragma endregion
 
 #pragma region 캡쳐 컴포넌트 관련
@@ -236,4 +272,16 @@ public:
 	 *            true = 죽음, false = 생존
 	 */
 	bool IsDeath = false;
+
+	/*
+	 * 25/12/17 코드 추가 : 변경자 천수호
+	 * 추가 내용 : 포션(키보드 4번)
+	 */
+	int32 HPPotion = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float RestoreHP = 10.f;
+	void AddPotion();
+	void EatPotion();
+	void AddPotions(int32 Potion);
+	int32 GetHPPotion() const { return HPPotion; }
 };

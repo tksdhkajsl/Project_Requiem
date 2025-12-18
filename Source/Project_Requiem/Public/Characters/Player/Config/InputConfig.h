@@ -17,6 +17,7 @@ enum class EHumanoidInput : uint8
     Interact,
     Stat,
     EquipWeapon,
+    EatPotion,
 };
 
 UCLASS(BlueprintType)
