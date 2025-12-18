@@ -184,7 +184,7 @@ void ABossBase::UpdateChase(float DeltaTime)
 		return;
 	}
 
-	if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange && DistanceToTarget <= RangedAttackRange)
+	if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange)
 	{
 		SetBossState(EBossState::Attack);
 		return;

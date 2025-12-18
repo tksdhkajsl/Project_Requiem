@@ -1,18 +1,21 @@
 // BossProjectile.cpp
 #include "BossBase/Projectile/BossProjectile.h"
 
-#include "Components/SphereComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 ABossProjectile::ABossProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
+	Collision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collision"));
 	SetRootComponent(Collision);
 
-	Collision->InitSphereRadius(12.0f);
+	Collision->InitCapsuleSize(25.0f,180.0f);
 
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Collision->SetCollisionObjectType(ECC_WorldDynamic);
@@ -33,6 +36,10 @@ ABossProjectile::ABossProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true; 
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f;   
+
+	VfxComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VFX"));
+	VfxComp->SetupAttachment(RootComponent);
+	VfxComp->SetAutoActivate(true);
 }
 
 void ABossProjectile::BeginPlay()
@@ -54,6 +61,12 @@ void ABossProjectile::BeginPlay()
 	if (AActor* OwnerActor = GetOwner())
 	{
 		Collision->IgnoreActorWhenMoving(OwnerActor, true);
+	}
+
+	if (VfxComp && VfxSystem)
+	{
+		VfxComp->SetAsset(VfxSystem);
+		VfxComp->Activate(true);
 	}
 }
 

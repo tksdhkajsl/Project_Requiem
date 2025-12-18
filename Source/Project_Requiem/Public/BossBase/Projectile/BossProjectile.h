@@ -5,8 +5,11 @@
 #include "GameFramework/Actor.h"
 #include "BossProjectile.generated.h"
 
-class USphereComponent;
+class UCapsuleComponent;
 class UProjectileMovementComponent;
+
+class UNiagaraComponent;
+class UNiagaraSystem;
 
 UCLASS()
 class PROJECT_REQUIEM_API ABossProjectile : public AActor
@@ -25,7 +28,7 @@ public:
 protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|Component")
-	USphereComponent* Collision = nullptr;
+	UCapsuleComponent* Collision = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|Component")
 	UProjectileMovementComponent* ProjectileMovement = nullptr;
@@ -38,6 +41,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|State")
 	bool bHitOnce = false; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|VFX")
+	UNiagaraComponent* VfxComp = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|VFX")
+	UNiagaraSystem* VfxSystem = nullptr;
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
