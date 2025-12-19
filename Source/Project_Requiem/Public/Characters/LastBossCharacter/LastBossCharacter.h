@@ -11,6 +11,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);			// 경험치
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLastBossName, FText, BossName);		// 이름
 
+// 보스가 스폰되었을 경우 보낼 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossSpawn);			// 보스가 스폰됨
+
 // 보스가 죽었을 경우 보낼 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossChangedPhase);	// 페이즈 변경
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossDead);			// 보스 죽음
@@ -28,19 +31,25 @@ public:
 
 	virtual void BeginPlay() override;
 
+private:
+	// 보스가 스폰할 때 실행하는 함수
+	void LastBossSpawn();
+	// 보스가 실행 끝났을 때 실행하는 함수
+	void LastBossEndSpawn(UAnimMontage* Montage, bool bInterrupted);
+
 public:
 	// 델리게이트
 	FOnApplyDamage OnApplyDamage;
 	FOnApplyExp OnApplyExp;
 	FOnLastBossName OnLastBossName;
 
+	FOnLastBossSpawn OnLastBossSpawn;
+
 	FOnLastBossChangedPhase OnLastBossChangedPhase;
 	FOnLastBossDead	OnLastBossDead;
 
 
 public:
-	// 이동 위치
-	virtual void Move(const FVector& Direction, float Value) override;
 
 	// 데미지를 받을 때(내 실제 피가 깍임)
 	virtual void ReceiveDamage(float DamageAmount) final;
@@ -64,9 +73,9 @@ public:
 
 	inline bool IsPhaseChanged() { return bPhaseChanged; }
 
-	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseOnePatterns() { return PhaseOnePatterns; }
+	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseOnePatterns() const { return PhaseOnePatterns; }
 
-	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseTwoPatterns() { return PhaseTwoPatterns; }
+	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseTwoPatterns() const { return PhaseTwoPatterns; }
 
 
 protected:
@@ -112,6 +121,12 @@ protected:
 	TObjectPtr<class UAnimMontage> PhaseTwoMontage5 = nullptr;
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
+	TArray<TObjectPtr<class UAnimMontage>> PhaseOnePatterns;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
+	TArray<TObjectPtr<class UAnimMontage>> PhaseTwoPatterns;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "00_Setting|Exp", meta = (ClampMin = "0"))
 	float DropExp = 0.0f;
 
@@ -124,11 +139,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Information|Name")
 	FText BossName;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
-	TArray<TObjectPtr<class UAnimMontage>> PhaseOnePatterns;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
-	TArray<TObjectPtr<class UAnimMontage>> PhaseTwoPatterns;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information")
+	bool bLastBossInvincible = false;
 private:
 	float MinHp = 0.0f;
 };

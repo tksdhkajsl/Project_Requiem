@@ -22,6 +22,8 @@ void UBTServiceChasePlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* N
 	}
 
 	UWorld* World = OwnerComp.GetWorld();
+	if (!World)
+		return;
 	APawn* Player = UGameplayStatics::GetPlayerPawn(World, 0);
 
 	if (World && Player)

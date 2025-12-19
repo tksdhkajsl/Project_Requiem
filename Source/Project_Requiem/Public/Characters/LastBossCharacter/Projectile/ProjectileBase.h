@@ -50,7 +50,7 @@ protected:
 	void MoveProjectile();
 
 	// 투사체의 초기 세팅 함수
-	void ResetProjectileState();
+	void InitProjectile();
 
 
 protected:
@@ -86,7 +86,7 @@ protected:
 
 private:
 	// 보스
-	TWeakObjectPtr<ALastBossCharacter> LastBoss;
+	TWeakObjectPtr<ALastBossCharacter> LastBoss = nullptr;
 
 	// 투사체가 활성화 되었는지에대한 여부
 	UPROPERTY(VisibleAnywhere, Category = "bDamageActive")

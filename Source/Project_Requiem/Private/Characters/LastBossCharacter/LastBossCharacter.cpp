@@ -18,27 +18,50 @@ void ALastBossCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	LastBossSpawn();
+}
+
+void ALastBossCharacter::LastBossSpawn()
+{
 	OnLastBossName.Broadcast(BossName);
 
 	AddPatternMontage();
-	PlayAnimMontage(SpawnMontage);
+	
+	if (SpawnMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		// 스폰시 몽타주 실행
+		float Duration = GetMesh()->GetAnimInstance()->Montage_Play(SpawnMontage);
+		// 몽타주 종료 이후 AI컨트롤러 활성화를 위한 델리게이트 전송
+		if (Duration > 0.0f)
+		{
+			FOnMontageEnded OnMontageEnded;
+			OnMontageEnded.BindUObject(this, &ALastBossCharacter::LastBossEndSpawn);
+			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(OnMontageEnded, SpawnMontage);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SpawnMontage가 없습니다"));
+	}
 }
 
-void ALastBossCharacter::Move(const FVector& Direction, float Value)
+void ALastBossCharacter::LastBossEndSpawn(UAnimMontage* Montage, bool bInterrupted)
 {
-	Super::Move(Direction, Value);
-
-	Move(Direction, Value);
+	bLastBossInvincible = true;
+	OnLastBossSpawn.Broadcast();
 }
 
 void ALastBossCharacter::ReceiveDamage(float DamageAmount)
 {
+	if (!bLastBossInvincible)
+		return;
+
 	GetStatComponent()->CurrHP -= DamageAmount;
 
 	OnApplyDamage.Broadcast(DamageAmount);
 	Super::ReceiveDamage(DamageAmount);
 
-	if (GetStatComponent()->CurrHP < 0.0f)
+	if (GetStatComponent() && GetStatComponent()->CurrHP < 0.0f)
 		Die();
 }
 
@@ -58,9 +81,6 @@ void ALastBossCharacter::Die()
 
 	if (Phase == 1)
 	{
-		// 페이즈1일 때 보스 사망 시 실행중 몽타주 중지
-		StopAnimMontage();
-
 		// 페이즈 증가
 		Phase++;
 		// 페이즈 넘어갈 때 체력 다시 회복
@@ -78,13 +98,15 @@ void ALastBossCharacter::Die()
 		StopAnimMontage();
 
 		// 사망 몽타주 출력
-		PlayAnimMontage(DieMontage);
+		GetMesh()->GetAnimInstance()->Montage_Play(DieMontage, 0.2f);
 
 		// 경험치 드랍
 		ApplyExp(DropExp);
 
 		// 보스 사망 델리게이트
-		//OnLastBossDead.Broadcast();
+		OnLastBossDead.Broadcast();
+
+		Destroy();
 	}
 }
 

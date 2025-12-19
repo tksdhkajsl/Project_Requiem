@@ -16,9 +16,15 @@ class PROJECT_REQUIEM_API ALastBossAIController : public AAIController
 	GENERATED_BODY()
 	
 protected:
-	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* InPawn) override;
 
 private:
+	UFUNCTION()
+	void StartBehaviorTree();
+
+private:
+	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
+
 	UPROPERTY(EditAnywhere, Category = "BehaviorTree")
 	TObjectPtr<UBehaviorTree> BehaviorTree = nullptr;
 };

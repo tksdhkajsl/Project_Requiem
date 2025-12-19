@@ -13,8 +13,6 @@
 void UBTTaskNodeRunMontage::InitializeFromAsset(UBehaviorTree& Asset)
 {
 	Super::InitializeFromAsset(Asset);
-
-
 }
 
 EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -53,26 +51,30 @@ EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& O
 
 		// 실행할 몽타주
 		UAnimMontage* MontageToPlay = nullptr;
+
 		if (Phase == 1)			// 보스의 페이즈1 몽타주 랜덤 출력
 		{
 			// 보스의 몽타주배열 저장 
-			const TArray<UAnimMontage*> MontageArr = LastBoss->GetPhaseOnePatterns();
+			const TArray<TObjectPtr<UAnimMontage>> MontageArr = LastBoss->GetPhaseOnePatterns();
 			// 랜덤으로 나온 키값의 몽타주가 있다면 실행할 몽타주에 저장
 			if (MontageArr.IsValidIndex(RandomMontageNum))
 				MontageToPlay = MontageArr[RandomMontageNum];
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("실행할 몽타주가 없습니다"));
+				return EBTNodeResult::Failed;
+			}
 		}
 		else if (Phase == 2)	// 보스의 페이즈2 몽타주 랜덤 출력
 		{
-			const TArray<UAnimMontage*> MontageArr = LastBoss->GetPhaseTwoPatterns();
+			const TArray<TObjectPtr<UAnimMontage>> MontageArr = LastBoss->GetPhaseTwoPatterns();
 			if (MontageArr.IsValidIndex(RandomMontageNum))
 				MontageToPlay = MontageArr[RandomMontageNum];
-		}
-
-		// 실행할 몽타주가 없을 때
-		if (!MontageToPlay)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("실행할 몽타주가 없습니다"));
-			return EBTNodeResult::Failed;
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("실행할 몽타주가 없습니다"));
+				return EBTNodeResult::Failed;
+			}
 		}
 
 		// 보스의 애님인스턴스 저장
@@ -83,6 +85,10 @@ EBTNodeResult::Type UBTTaskNodeRunMontage::ExecuteTask(UBehaviorTreeComponent& O
 			return EBTNodeResult::Failed;
 		}
 		
+		// 실행 전 검사
+		if (!MontageToPlay)
+			return EBTNodeResult::Failed;
+
 		const float PlayRate = 1.0f;
 		float Duration = AnimInst->Montage_Play(MontageToPlay, PlayRate);
 		if (Duration > 0.0f)
@@ -108,11 +114,14 @@ void UBTTaskNodeRunMontage::MontageEnded(UAnimMontage* Montage, bool bInterrupte
 	if (!CachedOwnerComp.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CachedOwnerComp에 저장된 캐시가 없습니다"));
-		return;
+		FinishLatentTask(*CachedOwnerComp.Get(), EBTNodeResult::Failed);
 	}
 
 	// 중간에 몽타주가 멈췄다면 Failed
 	EBTNodeResult::Type Result = bInterrupted ? EBTNodeResult::Failed : EBTNodeResult::Succeeded;
+	
+	// 델리게이트 바인드 해제
+	LastBoss->OnLastBossChangedPhase.RemoveDynamic(this, &UBTTaskNodeRunMontage::NextPhase);
 
 	// ExecuteTask의 InProgress상태 풀고 Result결과값 비헤이비어 트리에 전달
 	FinishLatentTask(*CachedOwnerComp.Get(), Result);
@@ -123,6 +132,9 @@ void UBTTaskNodeRunMontage::MontageEnded(UAnimMontage* Montage, bool bInterrupte
 
 void UBTTaskNodeRunMontage::NextPhase()
 {
+	if (!CachedOwnerComp.IsValid())
+		FinishLatentTask(*CachedOwnerComp.Get(), EBTNodeResult::Failed);
+
 	if (LastBoss.IsValid())
 	{
 		LastBoss->OnLastBossChangedPhase.RemoveDynamic(this, &UBTTaskNodeRunMontage::NextPhase);
