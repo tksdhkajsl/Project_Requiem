@@ -785,8 +785,6 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 			return;
 		}
 	}
-
-	
 	switch (Pattern)
 	{
 	case EBossPattern::Pattern1:
@@ -794,7 +792,7 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	case EBossPattern::Pattern3:
 	case EBossPattern::Pattern4:
 	case EBossPattern::Pattern5:
-		PerformMeleeAttack();	//	실제 데미지는 ApplyMeleeDamage 노티파이에서
+		PerformMeleeAttack();
 		break;
 
 	case EBossPattern::Pattern6:
@@ -813,6 +811,8 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 
 	FinishCurrentPattern();
 }
+
+	
 
 void ABossBase::TryPlayHitReact()
 {

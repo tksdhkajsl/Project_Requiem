@@ -1,6 +1,8 @@
 // BossProjectile.cpp
 #include "BossBase/Projectile/BossProjectile.h"
 
+#include "Components/ShapeComponent.h"
+#include "Components/SphereComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -12,10 +14,14 @@ ABossProjectile::ABossProjectile()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	Collision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collision"));
+	Collision = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	SetRootComponent(Collision);
 
-	Collision->InitCapsuleSize(25.0f,180.0f);
+	if (USphereComponent* Sphere = Cast<USphereComponent>(Collision))
+	{
+		Sphere->InitSphereRadius(60.0f);
+	}
+
 
 	Collision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Collision->SetCollisionObjectType(ECC_WorldDynamic);
@@ -36,10 +42,30 @@ ABossProjectile::ABossProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true; 
 	ProjectileMovement->bShouldBounce = false;
 	ProjectileMovement->ProjectileGravityScale = 0.0f;   
+	ProjectileMovement->bForceSubStepping = true;
+	ProjectileMovement->MaxSimulationTimeStep = 0.016f;
+	ProjectileMovement->MaxSimulationIterations = 8;
 
 	VfxComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("VFX"));
 	VfxComp->SetupAttachment(RootComponent);
 	VfxComp->SetAutoActivate(true);
+
+	// 캡슐 콜리전 추가
+	CapsuleCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CapsuleCollision"));
+	CapsuleCollision->SetupAttachment(RootComponent);
+
+	// 기본 크기
+	CapsuleCollision->InitCapsuleSize(25.0f, 180.0f);
+	
+	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CapsuleCollision->SetCollisionObjectType(ECC_WorldDynamic);
+
+	CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+
+	CapsuleCollision->SetNotifyRigidBodyCollision(true);
 }
 
 void ABossProjectile::BeginPlay()
@@ -51,16 +77,30 @@ void ABossProjectile::BeginPlay()
 		SetLifeSpan(LifeTime);
 	}
 
-	// 이벤트 바인딩
-	if (Collision)
-	{
-		Collision->OnComponentBeginOverlap.AddDynamic(this, &ABossProjectile::OnCollisionBeginOverlap);
-		Collision->OnComponentHit.AddDynamic(this, &ABossProjectile::OnCollisionHit);
-	}
+	// 어떤 콜리전을 쓸지 결정
+	ActiveCollision = bUseCapsuleCollision
+		? Cast<UPrimitiveComponent>(CapsuleCollision)
+		: Cast<UPrimitiveComponent>(Collision);
 
-	if (AActor* OwnerActor = GetOwner())
+	if (Collision)			Collision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (CapsuleCollision)	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (ActiveCollision)
 	{
-		Collision->IgnoreActorWhenMoving(OwnerActor, true);
+		ActiveCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		ActiveCollision->OnComponentBeginOverlap.AddDynamic(this, &ABossProjectile::OnCollisionBeginOverlap);
+		ActiveCollision->OnComponentHit.AddDynamic(this, &ABossProjectile::OnCollisionHit);
+
+		if (AActor* OwnerActor = GetOwner())
+		{
+			ActiveCollision->IgnoreActorWhenMoving(OwnerActor, true);
+		}
+
+		if (ProjectileMovement)
+		{
+			ProjectileMovement->SetUpdatedComponent(ActiveCollision);
+		}
 	}
 
 	if (VfxComp && VfxSystem)
@@ -100,6 +140,11 @@ void ABossProjectile::OnCollisionBeginOverlap(
 	if (OtherActor == GetOwner()) return;
 
 	HandleImpactAndDestroy(OtherActor);
+
+	if (bDestroyOnPawnHit)
+	{
+		Destroy();
+	}
 }
 
 void ABossProjectile::OnCollisionHit(
@@ -113,14 +158,21 @@ void ABossProjectile::OnCollisionHit(
 
 	if (!OtherActor || OtherActor == this)
 	{
-		bHitOnce = true;
-		Destroy();
 		return;
 	}
 
-	if (OtherActor == GetOwner()) return;
+	if (OtherActor->IsA<APawn>())
+	{
+		HandleImpactAndDestroy(OtherActor);
+		if (bDestroyOnPawnHit) Destroy();
+		return;
+	}
 
-	HandleImpactAndDestroy(OtherActor);
+	if (bDestroyOnWorldHit)
+	{
+		bHitOnce = true;
+		Destroy();
+	}
 }
 
 void ABossProjectile::HandleImpactAndDestroy(AActor* HitActor)
@@ -142,5 +194,5 @@ void ABossProjectile::HandleImpactAndDestroy(AActor* HitActor)
 		nullptr
 	);
 
-	Destroy();
+	
 }
