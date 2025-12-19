@@ -91,17 +91,18 @@ void ABossBase::SetBossState(EBossState NewState)
 			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 			{
 				AnimInstance->Montage_Play(DeathMontage);
+
+				FOnMontageEnded EndDelegate;
+				EndDelegate.BindUObject(this, &ABossBase::OnDeathMontageEnded);
+				AnimInstance->Montage_SetEndDelegate(EndDelegate, DeathMontage);
 			}
 		}
+		else
+		{
+			K2_DestroyActor();
+		}
 
-		// 3.5초 뒤 Destroy
-		FTimerHandle DestroyTimerHandle;
-		GetWorldTimerManager().SetTimer(
-			DestroyTimerHandle,
-			this,
-			&ABossBase::K2_DestroyActor,
-			3.5f, false
-		);
+		
 	}
 	break;
 
@@ -592,7 +593,7 @@ void ABossBase::OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	}
 }
 
-// 근접 몽타주 끝내기
+// 근접 몽타주 종료
 void ABossBase::OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (Montage == MeleeAttackMontage)
@@ -601,7 +602,11 @@ void ABossBase::OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	}
 }
 
-
+void ABossBase::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (Montage != DeathMontage) return;
+	K2_DestroyActor();
+}
 
 void ABossBase::LockMovement()
 {
@@ -654,11 +659,6 @@ void ABossBase::PerformRangedAttack()
 		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
 		{
 			AnimInstance->Montage_Play(RangedAttackMontage);
-
-			// 몽타주 끝나면 이동 잠금 해제
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindUObject(this, &ABossBase::OnRangedMontageEnded);
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, RangedAttackMontage);
 		}
 	}
 }

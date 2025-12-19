@@ -363,7 +363,9 @@ public:
 	UFUNCTION()
 	void OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
-	
+	// 데스 몽타주 종료
+	UFUNCTION()
+	void OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
 	// 애니메이션 몽타주 포인터
