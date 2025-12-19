@@ -805,15 +805,26 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	case EBossPattern::Pattern3:
 	case EBossPattern::Pattern4:
 	case EBossPattern::Pattern5:
+		// 페이즈2 전용
+	case EBossPattern::Pattern9:
+	case EBossPattern::Pattern10:
+	case EBossPattern::Pattern11:
+	case EBossPattern::Pattern12:
+	case EBossPattern::Pattern13:
 		PerformMeleeAttack();
 		break;
 
 	case EBossPattern::Pattern6:
 	case EBossPattern::Pattern7:
+		// 페이즈2 전용
+	case EBossPattern::Pattern14:
+	case EBossPattern::Pattern15:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		break;
 
 	case EBossPattern::Pattern8:
+		// 페이즈2 전용
+	case EBossPattern::Pattern16:
 		ApplyRangedAttackFromSocket(RightHandSocketName);
 		ApplyRangedAttackFromSocket(LeftHandSocketName);
 		break;

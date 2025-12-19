@@ -36,7 +36,7 @@ enum class EBossPattern : uint8
 {
 	None UMETA(DisplayName = "None"),
 
-	// 공통 근접
+	// 패턴
 	Pattern1  UMETA(DisplayName = "Pattern1 "),
 	Pattern2  UMETA(DisplayName = "Pattern2 "),
 	Pattern3  UMETA(DisplayName = "Pattern3 "),
@@ -46,6 +46,15 @@ enum class EBossPattern : uint8
 	Pattern7  UMETA(DisplayName = "Pattern7 "),
 	Pattern8  UMETA(DisplayName = "Pattern8 "),
 
+	// 페이즈2 전용
+	Pattern9  UMETA(DisplayName = "Pattern9 "),
+	Pattern10 UMETA(DisplayName = "Pattern10 "),
+	Pattern11 UMETA(DisplayName = "Pattern11 "),
+	Pattern12 UMETA(DisplayName = "Pattern12 "),
+	Pattern13 UMETA(DisplayName = "Pattern13 "),
+	Pattern14 UMETA(DisplayName = "Pattern14 "),
+	Pattern15 UMETA(DisplayName = "Pattern15 "),
+	Pattern16 UMETA(DisplayName = "Pattern16 "),
 };
 
 	
@@ -122,7 +131,6 @@ struct FBossPatternData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float InvulnerableDuration = 0.0f;
 	
-
 };
 
 
