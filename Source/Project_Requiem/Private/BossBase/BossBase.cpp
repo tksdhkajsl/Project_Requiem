@@ -345,7 +345,7 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 			
 
 	// 페이즈 넘어갈때는 피격 스킵
-	if (!bWillEnterPhaseChange)
+	if (!bWillEnterPhaseChange || bAllowHitReactBeforePhaseChange)
 	{
 		TryPlayHitReact();
 	}
@@ -693,6 +693,19 @@ bool ABossBase::IsPatternOffCooldown(EBossPattern Pattern, float Now) const
 	return (Now - *LastTimePtr) >= Data->Cooldown;
 }
 
+// 패턴 중단 
+void ABossBase::AbortCurrentPatternForHitReact()
+{
+	if (!bIsExecutingPattern) return;
+
+	bIsExecutingPattern = false;
+	CurrentPattern = EBossPattern::None;
+
+	PendingAoERadius = 0.0f;
+	PendingAoEDamage = 0.0f;
+	PendingInvulnerableDuration = 0.0f;
+}
+
 EBossPattern ABossBase::SelectPattern(float DistanceToTarget) const
 {
 	if (PatternTable.Num() <= 0)
@@ -830,7 +843,26 @@ void ABossBase::TryPlayHitReact()
 
 	if (AnimInstance->Montage_IsPlaying(HitReactMontage)) return;
 
+	if (bInterruptPatternOnHitReact)
+	{
+		// 패턴 플래그 강제 중단
+		AbortCurrentPatternForHitReact();
+
+		if (AnimInstance->IsAnyMontagePlaying())
+		{
+			AnimInstance->StopAllMontages(HitReactInterruptBlendOut);
+		}
+
+	}
+
+	LockMovement();
+
 	AnimInstance->Montage_Play(HitReactMontage);
+
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ABossBase::OnHitReactMontageEnded);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, HitReactMontage);
+
 	LastHitReactTime = Now;
 }
 
@@ -847,6 +879,17 @@ void ABossBase::FinishCurrentPattern()
 	{
 		SetBossState(EBossState::Chase);
 	}
+}
+
+void ABossBase::OnHitReactMontageEnded(UAnimMontage* Montage, bool Interrupted)
+{
+	if (Montage != HitReactMontage) return;
+	if (CurrentState == EBossState::Dead) return;
+	if (CurrentState == EBossState::PhaseChange) return;
+
+	UnlockMovement();
+
+	SetBossState(EBossState::Chase);
 }
 
 

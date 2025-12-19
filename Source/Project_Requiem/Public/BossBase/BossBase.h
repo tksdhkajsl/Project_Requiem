@@ -378,6 +378,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
 	bool bEnableHitReact = true;
 
+	// 히트 리액션 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta=(ClampMin = "0.0"))
 	float HitReactCooldown = 0.25f;
 
@@ -387,6 +388,18 @@ protected:
 	float LastHitReactTime = -9999.0f;
 
 	void TryPlayHitReact();
+
+	// 히트 리액션 재생될때 현재 패턴을 끊을지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bInterruptPatternOnHitReact = true;
+
+	// 끊을 때 블렌드아웃 시간
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta = (ClampMin = "0.0"))
+	float HitReactInterruptBlendOut = 0.05f;
+
+	// 페이즈 전환 직전에도 히트리액션 재생할지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bAllowHitReactBeforePhaseChange = true;
 
 	// 무적 능력
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
@@ -404,6 +417,10 @@ public:
 	// 패턴 종료 호출용(몽타주 끝/노티파이 끝에서 사용)
 	UFUNCTION(BlueprintCallable, Category = "Boss|Pattern")
 	void FinishCurrentPattern();
+
+	// 히트 리액션 후 복귀 함수
+	UFUNCTION()
+	void OnHitReactMontageEnded(UAnimMontage* Montage, bool Interrupted);
 
 protected:
 	// 패턴 선택
@@ -439,4 +456,7 @@ protected:
 	// 쿨타임 체크
 	bool IsPatternOffCooldown(EBossPattern Pattern, float Now) const;
 
+	// 패턴 강제 중단
+	void AbortCurrentPatternForHitReact();
+	
 };
