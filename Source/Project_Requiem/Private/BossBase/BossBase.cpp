@@ -171,6 +171,17 @@ void ABossBase::UpdateChase(float DeltaTime)
 		return;
 	}
 
+	if (bMovementLocked)
+	{
+		return;
+	}
+
+	if (!TargetCharacter)
+	{
+		SetBossState(EBossState::Idle);
+		return;
+	}
+
 	const FVector BossLocation = GetActorLocation();
 	const FVector TargetLocation = TargetCharacter->GetActorLocation();
 
