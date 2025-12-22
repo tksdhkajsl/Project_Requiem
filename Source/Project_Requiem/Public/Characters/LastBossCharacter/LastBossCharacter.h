@@ -4,25 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "Characters/BaseCharacter.h"
+#include "Interface/Boss/BossControlInterface.h"
+#include "BossBase/BossBase.h"
 #include "LastBossCharacter.generated.h"
 
 // 플레이어에게 보낼 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount);	// 데미지
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);			// 경험치
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLastBossName, FText, BossName);		// 이름
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);	// 경험치
 
-// 보스가 스폰되었을 경우 보낼 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossSpawn);			// 보스가 스폰됨
-
-// 보스가 죽었을 경우 보낼 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossChangedPhase);	// 페이즈 변경
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossEndChangedPhase);	// 페이즈 변경 종료
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossDead);			// 보스 죽음
 
 /**
  * 
  */
 UCLASS()
-class PROJECT_REQUIEM_API ALastBossCharacter : public ABaseCharacter
+class PROJECT_REQUIEM_API ALastBossCharacter : public ABaseCharacter, public IBossControlInterface
 {
 	GENERATED_BODY()
 
@@ -31,24 +29,19 @@ public:
 
 	virtual void BeginPlay() override;
 
-private:
-	// 보스가 스폰할 때 실행하는 함수
-	void LastBossSpawn();
-	// 보스가 실행 끝났을 때 실행하는 함수
-	void LastBossEndSpawn(UAnimMontage* Montage, bool bInterrupted);
-
 public:
 	// 델리게이트
-	FOnApplyDamage OnApplyDamage;
 	FOnApplyExp OnApplyExp;
-	FOnLastBossName OnLastBossName;
 
 	FOnLastBossSpawn OnLastBossSpawn;
-
 	FOnLastBossChangedPhase OnLastBossChangedPhase;
+	FOnLastBossEndChangedPhase OnLastBossEndChangedPhase;
 	FOnLastBossDead	OnLastBossDead;
 
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
+	FOnBossStatUpdated OnBossStatUpdated;
 
+	virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }
 public:
 
 	// 데미지를 받을 때(내 실제 피가 깍임)
@@ -71,8 +64,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	inline int32 GetBossPhase() { return Phase; }
 
-	inline bool IsPhaseChanged() { return bPhaseChanged; }
-
 	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseOnePatterns() const { return PhaseOnePatterns; }
 
 	inline const TArray<TObjectPtr<class UAnimMontage>> GetPhaseTwoPatterns() const { return PhaseTwoPatterns; }
@@ -82,18 +73,34 @@ protected:
 	// 보스 패턴 배열에 몽타주 추가 함수
 	void AddPatternMontage();
 
+private:
+	// 보스가 스폰할 때 실행하는 함수
+	void LastBossSpawn(UAnimMontage* Montage);
+	// 보스가 실행 끝났을 때 실행하는 함수
+	void LastBossEndSpawn(UAnimMontage* Montage, bool bInterrupted);
+	// 보스의 페이즈 변경 시 실행되는 함수
+	void LastBossPhaseChage(UAnimMontage* Montage);
+	// 보스가 페이즈 변경 종료 시 실행되는 함수
+	void LastBossEndPhaseChage(UAnimMontage* Montage, bool bInterrupted);
+
+	void LastBossDead(UAnimMontage* Montage);
+
+	void LastBossEndDead(UAnimMontage* Montage, bool bInterrupted);
+
 protected:
 	// 투사체 스폰 위치
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
-	TObjectPtr<class USceneComponent> SpawnProjectileLocation = nullptr;;
+	TObjectPtr<class USceneComponent> SpawnProjectileLocation = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<class USkeletalMesh> PhaseTwoSkeletalMesh = nullptr;
 
 	// 보스 상태에 따라 실행될 몽타주
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")	// 보스가 스폰될 때
 	TObjectPtr<class UAnimMontage> SpawnMontage = nullptr;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")	// 보스의 페이즈가 변경 될 때
+	TObjectPtr<class UAnimMontage> PhaseChangeMontage = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Montage")	// 보스가 죽었을 때
 	TObjectPtr<class UAnimMontage> DieMontage = nullptr;
 
 	// 보스 1페이즈 패턴 때 실행될 몽타주
@@ -140,7 +147,11 @@ protected:
 	FText BossName;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information")
-	bool bLastBossInvincible = false;
+	bool bLastBossInvincible = true;
 private:
 	float MinHp = 0.0f;
+
+public:
+	virtual void ActivateBossBattle() override;
+	virtual void ResetBossToDefault() override;
 };

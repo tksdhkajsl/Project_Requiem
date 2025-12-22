@@ -75,11 +75,14 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
 	float TickRate = 0.0f;
 	// 틱당 데미지 활성화
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick", meta = (ClampMin = "0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Tick")
 	bool bActiveTickDamage = false;
 	// Tick 단위 투사체 이동 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move", meta = (ClampMin = "0"))
 	float TickMoveDistance = 0.0f;
+	// 투사체 유도 활성화
+	/*UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Move")
+	float bActiveHoming = false;*/
 	// 투사체 지속시간
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Setting|Life", meta = (ClampMin = "0"))
 	float LifeTime = 0.0f;

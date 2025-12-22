@@ -44,18 +44,16 @@ void AProjectileBase::BeginPlay()
 
 	// 투사체 액터 활성화
 	ActivateProjectile();
-
 	
 	OnActorBeginOverlap.AddDynamic(this, &AProjectileBase::OnPlayerBeginOverlap);
-	
 	OnActorEndOverlap.AddDynamic(this, &AProjectileBase::OnPlayerEndOverlap);
 
 	if (!LastBoss.IsValid())
 		LastBoss = Cast<ALastBossCharacter>(GetOwner());
 
+	// 페이즈 변경시 투사체 삭제
 	if (LastBoss.IsValid())
 	{
-		LastBoss->OnLastBossChangedPhase.RemoveDynamic(this, &AProjectileBase::DeactivateProjectile);
 		LastBoss->OnLastBossChangedPhase.AddDynamic(this, &AProjectileBase::DeactivateProjectile);
 	}
 
@@ -198,9 +196,6 @@ void AProjectileBase::MoveProjectile()
 
 void AProjectileBase::InitProjectile()
 {
-	OnActorBeginOverlap.RemoveDynamic(this, &AProjectileBase::OnPlayerBeginOverlap);
-	OnActorEndOverlap.RemoveDynamic(this, &AProjectileBase::OnPlayerEndOverlap);
-
 	GetWorld()->GetTimerManager().ClearTimer(LifeTimerHandle);
 	GetWorld()->GetTimerManager().ClearTimer(TickTimerHandle);
 

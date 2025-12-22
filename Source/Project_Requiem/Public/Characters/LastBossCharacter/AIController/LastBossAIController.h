@@ -22,6 +22,9 @@ private:
 	UFUNCTION()
 	void StartBehaviorTree();
 
+	UFUNCTION()
+	void StopBehaviorTree();
+
 private:
 	TWeakObjectPtr<class ALastBossCharacter> LastBoss = nullptr;
 
