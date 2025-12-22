@@ -3,7 +3,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
+
 #include "BossBase/Projectile/BossProjectile.h"
+
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
 
 
 void ABossBase::Tick(float DeltaTime)
@@ -31,6 +35,11 @@ ABossBase::ABossBase()
 	{
 		MoveComp->MaxWalkSpeed = WalkSpeed;
 	}
+
+	// 보스 배경음악 오디오 컴포넌트 생성
+	BossBGMAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("BossBGMAudioComp"));
+	BossBGMAudioComp->SetupAttachment(RootComponent);
+	BossBGMAudioComp->bAutoActivate = false;
 
 }
 
@@ -373,6 +382,11 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		OnPhaseChanged(CurrentPhase, OldPhase);
 
 		SetBossState(EBossState::PhaseChange);
+
+		if (bAutoSwitchBGMOnPhaseChanged)
+		{
+			SwitchBossBGMByPhase(CurrentPhase);
+		}
 	}
 
 	return ActualDamage;
@@ -947,6 +961,91 @@ TSubclassOf<ABossProjectile> ABossBase::GetRangedProjectileClassByPhase() const
 	}
 
 	return RangedProjectileClass;
+}
+
+
+// 보스 배경음악
+void ABossBase::SetBossBGMSound(USoundBase* NewSound)
+{
+	BossBGMSound = NewSound;
+
+	if (BossBGMAudioComp && bBossBGMPlaying)
+	{
+		BossBGMAudioComp->SetSound(BossBGMSound);
+		BossBGMAudioComp->Play();
+	}
+}
+
+void ABossBase::StartBossBGM()
+{
+	if (!BossBGMAudioComp) return;
+
+	USoundBase* Desired = GetBossBGMSoundByPhase(CurrentPhase);
+	if (!Desired) return;
+
+	// 중복 재생 방지
+	if (bBossBGMPlaying && BossBGMAudioComp->IsPlaying() && BossBGMAudioComp->Sound == Desired)
+	{
+		return;
+	}
+
+	BossBGMAudioComp->SetSound(Desired);
+	BossBGMAudioComp->Play();
+	bBossBGMPlaying = true;
+}
+
+
+void ABossBase::StopBossBGM()
+{
+	if (!BossBGMAudioComp) return;
+
+	BossBGMAudioComp->Stop();
+	bBossBGMPlaying = false;
+}
+
+// 페이즈 사운드 선택
+USoundBase* ABossBase::GetBossBGMSoundByPhase(int32 Phase) const
+{
+	if (Phase >= 2 && BossBGM_Phase2) return BossBGM_Phase2;
+	if (BossBGM_Phase1) return BossBGM_Phase1;
+
+	return BossBGMSound;
+}
+
+void ABossBase::SwitchBossBGMByPhase(int32 Phase)
+{
+	if (!BossBGMAudioComp) return;
+
+	USoundBase* Desired = GetBossBGMSoundByPhase(Phase);
+	if (!Desired) return;
+
+	if (BossBGMAudioComp->Sound == Desired && BossBGMAudioComp->IsPlaying())
+	{
+		bBossBGMPlaying = true;
+		return;
+	}
+
+	if (BossBGMAudioComp->IsPlaying() && BGMFadeOutTime > 0.0f)
+	{
+		BossBGMAudioComp->FadeOut(BGMFadeOutTime, 0.0f);
+	}
+	else
+	{
+		BossBGMAudioComp->Stop();
+	}
+
+	BossBGMAudioComp->SetSound(Desired);
+
+	if (BGMFadeInTime > 0.0f)
+	{
+		BossBGMAudioComp->FadeIn(BGMFadeInTime, 1.0f);
+	}
+	else
+	{
+		BossBGMAudioComp->Play();
+	}
+
+	bBossBGMPlaying = true;
 }
 
 

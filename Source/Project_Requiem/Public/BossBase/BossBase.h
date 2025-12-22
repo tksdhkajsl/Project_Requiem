@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+
+#include "Sound/SoundBase.h"
+#include "Components/AudioComponent.h"
+
 #include "BossBase.generated.h"
 
 
@@ -493,4 +497,64 @@ protected:
 	// 패턴 강제 중단
 	void AbortCurrentPatternForHitReact();
 	
+
+protected:
+
+	// 보스 배경음악
+
+	// 보스전 배경음악 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	USoundBase* BossBGMSound = nullptr;
+
+	// 재생 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	UAudioComponent* BossBGMAudioComp = nullptr;
+
+	// 재생 중인지
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	bool bBossBGMPlaying = false;
+
+	// 페이즈별 보스전 배경음악
+
+	// 1페이즈
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	USoundBase* BossBGM_Phase1 = nullptr;
+
+	// 2페이즈
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	USoundBase* BossBGM_Phase2 = nullptr;
+
+	// 페이즈 변경 시 자동으로 BGM 스위치할지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM")
+	bool bAutoSwitchBGMOnPhaseChanged = true;
+
+	// 부드럽게 전환
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM", meta = (ClampMin = "0.0"))
+	float BGMFadeOutTime = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|BGM", meta = (ClampMin = "0.0"))
+	float BGMFadeInTime = 0.5f;
+
+public:
+
+	// 보스 배경음악 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	void StartBossBGM();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	void StopBossBGM();
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	void SetBossBGMSound(USoundBase* NewSound);
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	bool IsBossBGMPlaying() const { return bBossBGMPlaying; }
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	USoundBase* GetBossBGMSoundByPhase(int32 Phase) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
+	void SwitchBossBGMByPhase(int32 Phase);
+
+
 };
