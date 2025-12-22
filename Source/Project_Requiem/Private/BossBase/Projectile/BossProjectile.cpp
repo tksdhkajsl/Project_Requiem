@@ -28,8 +28,8 @@ ABossProjectile::ABossProjectile()
 
 	Collision->SetCollisionResponseToAllChannels(ECR_Ignore);
 
-	Collision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	Collision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
+	Collision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
 
 	Collision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
@@ -61,8 +61,8 @@ ABossProjectile::ABossProjectile()
 	CapsuleCollision->SetCollisionObjectType(ECC_WorldDynamic);
 
 	CapsuleCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Block);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
+	CapsuleCollision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
 	CapsuleCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	CapsuleCollision->SetNotifyRigidBodyCollision(true);

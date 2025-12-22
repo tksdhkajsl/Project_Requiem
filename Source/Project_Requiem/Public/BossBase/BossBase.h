@@ -262,6 +262,30 @@ protected:
 	// 원거리 공격 시도
 	void PerformRangedAttack(); 
 
+	// 1페이즈 발사체
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	TSubclassOf<ABossProjectile> RangedProjectileClass_Phase1;
+
+	// 2페이즈 발사체(VFX 다른버전)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
+	TSubclassOf<ABossProjectile> RangedProjectileClass_Phase2;
+
+	// 2페이즈 멀티샷 옵션
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged|Phase2")
+	int32 Phase2_RangedShotCount = 3;
+
+	// 좌우 퍼짐 각도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged|Phase2")
+	float Phase2_RangedSpreadYaw = 12.0f;
+
+	// 멀티샷 사용 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged|Phase2")
+	bool bPhase2_UseMultiShot = true;
+
+	TSubclassOf<ABossProjectile> GetRangedProjectileClassByPhase() const;
+
+
+
 	// 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossDamaged OnBossDamaged;

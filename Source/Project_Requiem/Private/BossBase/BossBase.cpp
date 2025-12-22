@@ -446,6 +446,8 @@ void ABossBase::ApplyRangedAttack()
 	ApplyRangedAttackFromSocket(RightHandSocketName);
 }
 
+
+
 // 몽타주 재생만
 void ABossBase::PerformMeleeAttack()
 {
@@ -482,42 +484,58 @@ void ABossBase::ApplyRangedAttackFromSocket(FName SocketName)
 {
 	if (CurrentState == EBossState::Dead) return;
 	if (!bUseRangedAttack || !TargetCharacter) return;
-	if (!RangedProjectileClass) return; 
+
+	TSubclassOf<ABossProjectile> UseClass = GetRangedProjectileClassByPhase();
+	if (!UseClass) return;
 
 	FVector MuzzleLocation;
-	FRotator MuzzleRotation;
+	FRotator BaseRot;
 
 	USkeletalMeshComponent* MeshComp = GetMesh();
 
 	if (MeshComp && SocketName != NAME_None && MeshComp->DoesSocketExist(SocketName))
 	{
 		MuzzleLocation = MeshComp->GetSocketLocation(SocketName);
-		MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation(); 
+		BaseRot = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation(); 
 	}
 	else
 	{
 		// 소켓이 없으면: 임시 위치(앞쪽+위쪽)에서 발사
 		MuzzleLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0, 0, 50.0f);
-		MuzzleRotation = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
+		BaseRot = (TargetCharacter->GetActorLocation() - MuzzleLocation).Rotation();
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;                
-	SpawnParams.Instigator = GetInstigator(); 
+	const bool bDoMulti =
+		(CurrentPhase >= 2) && bPhase2_UseMultiShot && (Phase2_RangedShotCount > 1);
 
-	ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
-		RangedProjectileClass,
-		MuzzleLocation,
-		MuzzleRotation,
-		SpawnParams
-	);
+	const int32 ShotCount = bDoMulti ? Phase2_RangedShotCount : 1;
 
-	if (!Projectile) return;
+	// 좌우 퍼짐 각도 계산
+	const float Spread = bDoMulti ? Phase2_RangedSpreadYaw : 0.0f;
+	const float Half = (ShotCount - 1) * 0.5f;
 
 	AController* BossController = GetController();
 
-	Projectile->InitProjectile(RangedDamage, BossController);
+	for (int32 i = 0; i < ShotCount; ++i)
+	{
+		const float YawOffset = (i - Half) * Spread;
+		const FRotator ShotRot = BaseRot + FRotator(0, YawOffset, 0);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;                
+		SpawnParams.Instigator = GetInstigator(); 
+
+		ABossProjectile* Projectile = GetWorld()->SpawnActor<ABossProjectile>(
+			UseClass, MuzzleLocation, ShotRot, SpawnParams);
+	
+
+		if (!Projectile) continue;
+
+		Projectile->InitProjectile(RangedDamage, BossController);
+	}
 }
+
+
 
 
 // 무적 능력
@@ -903,5 +921,21 @@ void ABossBase::OnHitReactMontageEnded(UAnimMontage* Montage, bool Interrupted)
 	SetBossState(EBossState::Chase);
 }
 
+TSubclassOf<ABossProjectile> ABossBase::GetRangedProjectileClassByPhase() const
+{
+	// 2페이즈면 Phase2 클래스 우선
+	if (CurrentPhase >= 2 && RangedProjectileClass_Phase2)
+	{
+		return RangedProjectileClass_Phase2;
+	}
+
+	// 1페이즈면 Phase1 클래스 우선
+	if (RangedProjectileClass_Phase1)
+	{
+		return RangedProjectileClass_Phase1;
+	}
+
+	return RangedProjectileClass;
+}
 
 
