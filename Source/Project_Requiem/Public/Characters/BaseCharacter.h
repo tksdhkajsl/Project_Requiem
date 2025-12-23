@@ -7,6 +7,7 @@
 class UStatComponent;
 struct FOffspringData;
 
+<<<<<<< HEAD:Source/Project_Requiem/Public/Characters/BaseCharacter.h
 /*
 공격자: Player / Enemy 공통 패턴
 void APlayerCharacter::Attack1()
@@ -76,11 +77,33 @@ void AEnemyCharacter::Die()
     // 보스면 Destroy, 적 일반몹은 hiddeningame + ECC::Nocolision
 }
 */
+=======
+#pragma region 캡쳐 컴포넌트 관련
+class USceneCaptureComponent2D;
+#pragma endregion
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1:Source/Project_Requiem/Public/Character/BaseCharacter.h
 
 UCLASS()
 class PROJECT_REQUIEM_API ABaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
+<<<<<<< HEAD:Source/Project_Requiem/Public/Characters/BaseCharacter.h
+=======
+
+#pragma region 캡쳐 컴포넌트 관련
+
+protected:
+    /** @brief 플레이어 초상화 생성을 위한 3D 캡처 카메라 */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Portrait")
+    TObjectPtr<USceneCaptureComponent2D> PortraitCaptureComponent;
+
+public:
+    // 캡처 컴포넌트를 외부에 노출하여 UMG에서 접근할 수 있도록 합니다.
+    FORCEINLINE USceneCaptureComponent2D* GetPortraitCaptureComponent() const { return PortraitCaptureComponent; }
+#pragma endregion
+
+	
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1:Source/Project_Requiem/Public/Character/BaseCharacter.h
 	
 #pragma region 기본 생성
 public:

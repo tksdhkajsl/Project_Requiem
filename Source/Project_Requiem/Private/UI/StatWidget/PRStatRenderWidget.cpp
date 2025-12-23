@@ -1,12 +1,16 @@
 #include "UI/StatWidget/PRStatRenderWidget.h"
 #include "Components/TextBlock.h"
+<<<<<<< HEAD
 #include "Components/Button.h"
+=======
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 
 // ========================================================
 // 언리얼 기본 생성
 // ========================================================
 void UPRStatRenderWidget::NativeConstruct()
 {
+<<<<<<< HEAD
 	if (!StrValueText)          UE_LOG(LogTemp, Error, TEXT("StrValueText (TextBlock) is not bound in UMG!"));
 	if (!HealthValueText)       UE_LOG(LogTemp, Error, TEXT("HealthValueText (TextBlock) is not bound in UMG!"));
     if (!MaxHealthValueText)    UE_LOG(LogTemp, Error, TEXT("MaxHealthValueText (TextBlock) is not bound in UMG!"));
@@ -70,6 +74,19 @@ void UPRStatRenderWidget::OnClick_DexIncrease()
 }
 // ========================================================
 // 파생 스탯 갱신
+=======
+	if (!HealthValueText)       UE_LOG(LogTemp, Error, TEXT("HealthValueText (TextBlock) is not bound in UMG!"));
+    if (!MaxHealthValueText)    UE_LOG(LogTemp, Error, TEXT("MaxHealthValueText (TextBlock) is not bound in UMG!"));
+    if (!StaminaValueText)      UE_LOG(LogTemp, Error, TEXT("StaminaValueText (TextBlock) is not bound in UMG!"));
+    if (!MaxStaminaValueText)   UE_LOG(LogTemp, Error, TEXT("MaxStaminaValueText (TextBlock) is not bound in UMG!"));
+    if (!PhysicalAttackText)    UE_LOG(LogTemp, Error, TEXT("PhysicalAttackText (TextBlock) is not bound in UMG!"));
+    if (!MagicAttackText)       UE_LOG(LogTemp, Error, TEXT("MagicAttackText (TextBlock) is not bound in UMG!"));
+    if (!PhysicalDefenseText)   UE_LOG(LogTemp, Error, TEXT("PhysicalDefenseText (TextBlock) is not bound in UMG!"));
+    if (!MagicDefenseText)      UE_LOG(LogTemp, Error, TEXT("MagicDefenseText (TextBlock) is not bound in UMG!"));
+}
+// ========================================================
+// 스탯 갱신
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 // ========================================================
 void UPRStatRenderWidget::UpdateResourceStat(EFullStats StatType, float CurrentValue, float MaxValue)
 {
@@ -100,9 +117,13 @@ void UPRStatRenderWidget::UpdateSingleStat(EFullStats StatType, float Value)
     case EFullStats::PhysicalAttack:
         if (PhysicalAttackText) PhysicalAttackText->SetText(FText::FromString(ValueString));
         break;
+<<<<<<< HEAD
     case EFullStats::AttackSpeed:
         if (AttackSpeedText) AttackSpeedText->SetText(FText::FromString(ValueString));
         break;
+=======
+
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
     case EFullStats::MagicAttack:
         if (MagicAttackText) MagicAttackText->SetText(FText::FromString(ValueString));
         break;

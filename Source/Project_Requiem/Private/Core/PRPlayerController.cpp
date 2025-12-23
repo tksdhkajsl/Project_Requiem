@@ -1,9 +1,14 @@
 #include "Core/PRPlayerController.h"
 #include "UI/HUD/PRHUDWidget.h"
 #include "UI/StatWidget/PRStatWidget.h"
+<<<<<<< HEAD
 //
 #include "Characters/BaseCharacter.h"
 #include "Characters/Player/Character/PlayerCharacter.h"
+=======
+
+#include "Character/BaseCharacter.h"
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 #include "Stats/StatComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 // ========================================================
@@ -131,7 +136,11 @@ void APRPlayerController::HandleStatInput()
 void APRPlayerController::OnStatWindowOpened()
 {
 	APawn* PlayerPawn = GetPawn();
+<<<<<<< HEAD
 	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PlayerPawn);
+=======
+	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
 
 	if (CaptureComp) {
@@ -144,7 +153,11 @@ void APRPlayerController::OnStatWindowOpened()
 void APRPlayerController::OnStatWindowClosed()
 {
 	APawn* PlayerPawn = GetPawn();
+<<<<<<< HEAD
 	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PlayerPawn);
+=======
+	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+>>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
 
 	if (CaptureComp) {
