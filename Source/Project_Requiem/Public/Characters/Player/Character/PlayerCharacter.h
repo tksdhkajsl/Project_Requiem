@@ -94,6 +94,7 @@ public:
 	void SetWalkMode(const FInputActionValue& Value);
 	void EquipWeapon(const FInputActionValue& Value);
 	void AttackInput(const FInputActionValue& Value);
+	void InputLockOn(const FInputActionValue& Value);
 
 	void ViewStat();
 #pragma endregion
@@ -171,6 +172,8 @@ protected:
 	TObjectPtr<class UWeaponManagerComponent> WeaponManager = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Player|Weapon")
 	TObjectPtr<class UWeaponMasteryComponent> WeaponMastery = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class ULockOnComponent> LockOnComponent;
 
 	// 구르기 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation|Montage")

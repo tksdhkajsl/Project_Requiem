@@ -100,24 +100,6 @@ protected:
 	UPROPERTY()
 	TArray<AActor*> HitActors;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
-	TSubclassOf<UDamageType> DamageType = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float AreaInnerRadius = 100.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float AreaOuterRadius = 300.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float Falloff = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float DebugDuration = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	TObjectPtr<class UNiagaraSystem> AreaAttackEffect = nullptr;
-
 private:
 	TWeakObjectPtr<APlayerCharacter> WeaponOwner = nullptr;
 

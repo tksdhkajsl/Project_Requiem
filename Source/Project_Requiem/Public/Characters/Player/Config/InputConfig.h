@@ -11,7 +11,7 @@ enum class EHumanoidInput : uint8
     Look,
     Roll,
     Attack,
-    HeavyAttack,
+    LockOn,
     Sprint,
     Inventory,
     Interact,

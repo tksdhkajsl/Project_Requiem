@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Characters/Player/Weapons/WeaponManagerComponent.h"
 #include "Characters/Player/Weapons/WeaponMasteryComponent.h"
+#include "Characters/Player/Components/LockOnComponent.h"
 
 #pragma region Input
 #include "EnhancedInputSubsystems.h"
@@ -49,6 +50,7 @@ APlayerCharacter::APlayerCharacter()
 
 	WeaponManager = CreateDefaultSubobject<UWeaponManagerComponent>(TEXT("WeaponManager"));
 	WeaponMastery = CreateDefaultSubobject<UWeaponMasteryComponent>(TEXT("WeaponMasteryComp"));
+	LockOnComponent = CreateDefaultSubobject<ULockOnComponent>(TEXT("LockOnComponent"));
 
 	InteractionTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("Interactio Trigger Volume"));
 	InteractionTrigger->SetupAttachment(RootComponent);
@@ -127,6 +129,12 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		UInputAction* InteractAction = InputConfig->GetAction(EHumanoidInput::Interact);
 		if (InteractAction) EIC->BindAction(InteractAction, ETriggerEvent::Completed, this, &ThisClass::InputInteract);
+
+		UInputAction* LockOnAction = InputConfig->GetAction(EHumanoidInput::LockOn);
+		if (LockOnAction)
+		{
+			EIC->BindAction(LockOnAction, ETriggerEvent::Started, this, &ThisClass::InputLockOn);
+		}
 	}
 }
 void APlayerCharacter::Tick(float DeltaTime)
@@ -145,7 +153,14 @@ void APlayerCharacter::Tick(float DeltaTime)
 	// 3. 실제로 움직이고 있어야 함 (Velocity > 0) -> 제자리에서 벽에 막히거나 멈췄을 때 감소 방지
 	if (bIsSprint && !bIsAttacking && GetVelocity().Size2D() > 1.0f)
 	{
-		StatComponent->ChangeStatCurrent(EFullStats::Stamina, -0.1);
+		StatComponent->ChangeStatCurrent(EFullStats::Stamina, -0.1f);
+
+		// 스태미나가 다 떨어지면
+		if (StatComponent->GetStatCurrent(EFullStats::Stamina) <= 0.f)
+		{
+			// 강제로 걷기 모드로 전환 (빈 값(FInputActionValue)을 넣어 함수 재활용)
+			SetWalkMode(FInputActionValue());
+		}
 	}
 }
 void APlayerCharacter::BeginPlay()
@@ -316,8 +331,14 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 }
 void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
 {
-	// [추가] 공격 중이면 달리기 시작 불가
+	// 공격 중이면 달리기 시작 불가
 	if (bIsAttacking) return;
+
+	// 스태미너가 없으면 달리기 시작 불가
+	if (StatComponent->GetStatCurrent(EFullStats::Stamina) <= 0.f)
+	{
+		return;
+	}
 
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 	bIsSprint = true;
@@ -464,6 +485,13 @@ void APlayerCharacter::AttackInput(const FInputActionValue& Value)
 		PlayComboAttack();
 	}
 }
+void APlayerCharacter::InputLockOn(const FInputActionValue& Value)
+{
+	if (LockOnComponent)
+	{
+		LockOnComponent->ToggleLockOn();
+	}
+}
 void APlayerCharacter::ViewStat()
 {
 	if (APRPlayerController* PC = GetController<APRPlayerController>()) {
@@ -495,20 +523,23 @@ void APlayerCharacter::PlayComboAttack()
 	{
 		// 현재 공격 속도를 StatComponent에서 가져와 저장
 		AttackSpeed = StatComponent->GetStatCurrent(EFullStats::AttackSpeed);
-		// 너무 느리거나 빨라지지 않게 안전장치 (0.5배 ~ 2.5배)
-		AttackSpeed = FMath::Clamp(AttackSpeed, 0.5f, 2.5f);
-
-		//공격을 시도하면 무조건 스태미너 회복을 멈춥니다.
-		StatComponent->SetStaminaRegenPaused(true);
+		// 너무 느리거나 빨라지지 않게 안전장치 (0.5배 ~ 2.0배)
+		AttackSpeed = FMath::Clamp(AttackSpeed, 0.5f, 2.0f);
 	}
-	// =============================================================
-	// 상황 1: 아무 몽타주도 재생 중이 아닐 때 (1타 공격 시작)
-	// =============================================================
+
+	// 스태미너 검사
 	if (StatComponent->GetStatCurrent(EFullStats::Stamina) < ConsumeStamina)
 	{
 		return; // 스태미너 부족 시 공격 불가
 	}
-	else if (!AnimInst->IsAnyMontagePlaying())
+
+	//공격을 시도하면 무조건 스태미너 회복을 멈춥니다.
+	StatComponent->SetStaminaRegenPaused(true);
+
+	// =============================================================
+	// 상황 1: 아무 몽타주도 재생 중이 아닐 때 (1타 공격 시작)
+	// =============================================================
+	if (!AnimInst->IsAnyMontagePlaying())
 	{
 		bIsAttacking = true;
 		CurrentCombo = 1; // 1타부터 시작
