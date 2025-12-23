@@ -7,15 +7,11 @@
 class UPRPlayerPortraitWidget;
 class UPRStatRenderWidget;
 class UStatComponent;
-<<<<<<< HEAD
 class UTextBlock;
 enum class ELevelUpStats : uint8;
 enum class EFullStats : uint8;
 enum class EWeaponCode : uint8;
 enum class EWeaponRank : uint8;
-=======
-enum class EFullStats : uint8;
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 
 UCLASS()
 class PROJECT_REQUIEM_API UPRStatWidget : public UUserWidget
@@ -26,7 +22,6 @@ class PROJECT_REQUIEM_API UPRStatWidget : public UUserWidget
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
-<<<<<<< HEAD
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> SoulValueText;
@@ -42,18 +37,6 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> Text_DualBladeRank;
     // =============================================================
-=======
-#pragma endregion
-	
-#pragma region 초상화 위젯
-protected:
-    ///**
-    // * @brief 플레이어 3D 초상화(Scene Capture 2D 결과물)와 추가 정보가 표시되는 패널
-    // * UMG 블루프린트에서 'UPRPlayerPortraitWidget'을 추가하고 변수 이름과 일치시켜야 합니다.
-    // */
-    //UPROPERTY(meta = (BindWidget))
-    //TObjectPtr<UPRPlayerPortraitWidget> PortraitPanel;
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 #pragma endregion
 
 #pragma region 스탯 렌더 위젯
@@ -73,7 +56,6 @@ protected:
     TObjectPtr<UPRStatRenderWidget> StatRenderList;
 #pragma endregion
 
-<<<<<<< HEAD
 #pragma region 무기 랭크 업데이트
 public:
     // 외부에서 랭크가 바뀌면 호출할 함수
@@ -84,8 +66,6 @@ private:
     FText GetRankText(EWeaponRank Rank);
 #pragma endregion
 
-=======
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 #pragma region 스탯컴포넌트 캐싱용
 public:
     /**
@@ -96,7 +76,6 @@ public:
     void SetStatComponent(UStatComponent* Component);
 
     void InitializeStatValues();
-<<<<<<< HEAD
 
     UFUNCTION()
     void HandleBasicStatUpdate(ELevelUpStats StatType, int32 AllocatedPoints);
@@ -106,10 +85,6 @@ public:
     void HandleExpChanged(float CurrentExp);
     UFUNCTION()
     void HandleRequestLevelUpStat(ELevelUpStats StatType);
-=======
-    UFUNCTION()
-    void HandleRegenStatUpdate(EFullStats StatType, float CurrentValue, float MaxValue);
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1
 
     FORCEINLINE UStatComponent* GetCachedStatComponent() const { return CachedStatComponent; }
 private:

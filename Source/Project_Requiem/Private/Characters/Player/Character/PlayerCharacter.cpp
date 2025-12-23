@@ -535,6 +535,34 @@ void APlayerCharacter::PlayComboAttack()
 	}
 }
 
+void APlayerCharacter::ProcessWeaponHit(AActor* TargetActor)
+{
+	// 유효성 검사
+	if (!TargetActor) return;
+	// 2. 공격력 가져오기 (StatComponent 활용)
+	float FinalDamage = 0.f;
+	if (StatComponent)
+	{
+		FinalDamage = StatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
+	}
+	// 3. 크리티컬 및 숙련도 계산
+	if (WeaponMastery)
+	{
+		FWeaponMasteryData MasteryData = WeaponMastery->GetMasteryData(CurrentWeaponType);
+
+		// 크리티컬 확률 체크
+		if (FMath::FRand() <= MasteryData.CritRate)
+		{
+			FinalDamage *= MasteryData.CritDamage;
+
+			// (필요시) 크리티컬 이펙트나 사운드 재생, 카메라 흔들림 등 추가
+			// UE_LOG(LogTemp, Warning, TEXT("Critical Hit!"));
+		}
+	}
+	// 4. 최종 데미지 전달 (부모 클래스의 Attack 함수 이용)
+	Super::Attack(TargetActor, FinalDamage);
+}
+
 void APlayerCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	// 몽타주가 끝났으니 상태 초기화

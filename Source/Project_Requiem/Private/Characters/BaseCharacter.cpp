@@ -1,14 +1,7 @@
 ﻿#include "Characters/BaseCharacter.h"
 
 #include "Stats/StatComponent.h"
-<<<<<<< HEAD:Source/Project_Requiem/Private/Characters/BaseCharacter.cpp
 #include <Kismet/GameplayStatics.h>
-=======
-
-#pragma region 캡쳐 컴포넌트 관련
-#include "Components/SceneCaptureComponent2D.h"
-#pragma endregion
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1:Source/Project_Requiem/Private/Character/BaseCharacter.cpp
 
 //---------------기본 생성-------------------
 ABaseCharacter::ABaseCharacter()
@@ -18,19 +11,6 @@ ABaseCharacter::ABaseCharacter()
 #pragma region 컴포넌트 관련 초기화
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 #pragma endregion
-<<<<<<< HEAD:Source/Project_Requiem/Private/Characters/BaseCharacter.cpp
-=======
-
-#pragma region 캡쳐 컴포넌트 관련
-	PortraitCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PortraitCapture"));
-	PortraitCaptureComponent->SetupAttachment(RootComponent);
-	PortraitCaptureComponent->SetRelativeLocation(FVector(150.f, 0.f, 70.f));
-	PortraitCaptureComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-	PortraitCaptureComponent->bCaptureEveryFrame = false;
-	PortraitCaptureComponent->bAlwaysPersistRenderingState = true;
-	PortraitCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
-#pragma endregion
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1:Source/Project_Requiem/Private/Character/BaseCharacter.cpp
 }
 void ABaseCharacter::Tick(float DeltaTime)
 {
@@ -48,18 +28,6 @@ void ABaseCharacter::BeginPlay()
 #pragma region 스탯 컴포넌트
 	StatComponent->InitializeStatsComponent();
 #pragma endregion
-<<<<<<< HEAD:Source/Project_Requiem/Private/Characters/BaseCharacter.cpp
-=======
-
-#pragma region 캡쳐 컴포넌트 관련
-	if (PortraitCaptureComponent) {
-		TArray<AActor*> ActorsToShow;
-		ActorsToShow.Add(this);
-		PortraitCaptureComponent->ShowOnlyActors = ActorsToShow;
-		PortraitCaptureComponent->bCaptureEveryFrame = false;
-	}
-#pragma endregion
->>>>>>> 2bd40acd771b463067b062a5a771101532b23eb1:Source/Project_Requiem/Private/Character/BaseCharacter.cpp
 }
 //---------------스탯 컴포넌트 관련-------------------
 

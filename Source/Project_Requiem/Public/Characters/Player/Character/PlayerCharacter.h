@@ -138,7 +138,9 @@ protected:
 #pragma endregion
 
 public:
-
+	// 무기에서 호출할 충돌 처리 함수
+	UFUNCTION()
+	void ProcessWeaponHit(AActor* TargetActor);
 	// 몽타주 종료 시 호출될 델리게이트
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -276,9 +278,9 @@ public:
 	 * 25/12/17 코드 추가 : 변경자 천수호
 	 * 추가 내용 : 포션(키보드 4번)
 	 */
-	int32 HPPotion = 0;
+	int32 HPPotion = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float RestoreHP = 10.f;
+	float RestoreHP = 30.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ConsumeStamina = 10.f;
 	void AddPotion();
