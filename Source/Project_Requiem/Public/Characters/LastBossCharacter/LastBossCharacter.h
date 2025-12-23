@@ -14,7 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);	// �
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossSpawn);			// 보스가 스폰됨
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossChangedPhase);	// 페이즈 변경
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossEndChangedPhase);	// 페이즈 변경 종료
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossDead);			// 보스 죽음
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLastBossStop);			// 보스 죽음
 
 /**
  * 
@@ -36,7 +36,7 @@ public:
 	FOnLastBossSpawn OnLastBossSpawn;
 	FOnLastBossChangedPhase OnLastBossChangedPhase;
 	FOnLastBossEndChangedPhase OnLastBossEndChangedPhase;
-	FOnLastBossDead	OnLastBossDead;
+	FOnLastBossStop	OnLastBossStop;
 
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
 	FOnBossStatUpdated OnBossStatUpdated;
@@ -82,10 +82,21 @@ private:
 	void LastBossPhaseChage(UAnimMontage* Montage);
 	// 보스가 페이즈 변경 종료 시 실행되는 함수
 	void LastBossEndPhaseChage(UAnimMontage* Montage, bool bInterrupted);
-
+	// 보스가 죽었을 때 실행되는 함수
 	void LastBossDead(UAnimMontage* Montage);
-
+	// 보스가 죽고 난 후 실행되는 함수
 	void LastBossEndDead(UAnimMontage* Montage, bool bInterrupted);
+
+public:
+	// 보스 방 입장 시 실행 함수
+	virtual void ActivateBossBattle() override;
+
+	// 플레이어 사망 시 실행 함수
+	virtual void ResetBossToDefault() override;
+
+private:
+	// 보스 초기화 함수
+	void ResetLastBoss();
 
 protected:
 	// 투사체 스폰 위치
@@ -137,7 +148,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "00_Setting|Exp", meta = (ClampMin = "0"))
 	float DropExp = 0.0f;
 
-	UPROPERTY(VisibleAnywhere, Category = "Information|Phase", meta = (ClampMin = "1", ClampMax = "2"))
+	UPROPERTY(VisibleAnywhere, Category = "Information|Phase")
 	int32 Phase = 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information|Phase")
@@ -147,11 +158,9 @@ protected:
 	FText BossName;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information")
-	bool bLastBossInvincible = true;
+	bool bLastBossInvincible = false;
 private:
-	float MinHp = 0.0f;
+	FVector SpawnLocation;
 
-public:
-	virtual void ActivateBossBattle() override;
-	virtual void ResetBossToDefault() override;
+	float MinHp = 0.0f;
 };

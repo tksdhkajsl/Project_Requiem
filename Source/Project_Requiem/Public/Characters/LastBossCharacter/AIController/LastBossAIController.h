@@ -23,6 +23,9 @@ private:
 	void StartBehaviorTree();
 
 	UFUNCTION()
+	void ReStartBehaviorTree();
+
+	UFUNCTION()
 	void StopBehaviorTree();
 
 private:

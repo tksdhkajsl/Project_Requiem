@@ -25,12 +25,12 @@ void ALastBossAIController::OnPossess(APawn* InPawn)
 		LastBoss->OnLastBossChangedPhase.AddDynamic(this, &ALastBossAIController::StopBehaviorTree);
 
 		// 페이즈 전환 종료시
-		LastBoss->OnLastBossEndChangedPhase.RemoveDynamic(this, &ALastBossAIController::StartBehaviorTree);
-		LastBoss->OnLastBossEndChangedPhase.AddDynamic(this, &ALastBossAIController::StartBehaviorTree);
+		LastBoss->OnLastBossEndChangedPhase.RemoveDynamic(this, &ALastBossAIController::ReStartBehaviorTree);
+		LastBoss->OnLastBossEndChangedPhase.AddDynamic(this, &ALastBossAIController::ReStartBehaviorTree);
 
 		// 보스 사망시
-		LastBoss->OnLastBossDead.RemoveDynamic(this, &ALastBossAIController::StopBehaviorTree);
-		LastBoss->OnLastBossDead.AddDynamic(this, &ALastBossAIController::StopBehaviorTree);
+		LastBoss->OnLastBossStop.RemoveDynamic(this, &ALastBossAIController::StopBehaviorTree);
+		LastBoss->OnLastBossStop.AddDynamic(this, &ALastBossAIController::StopBehaviorTree);
 	}
 }
 
@@ -39,6 +39,17 @@ void ALastBossAIController::StartBehaviorTree()
 	if (BehaviorTree)
 	{
 		RunBehaviorTree(BehaviorTree);
+	}
+}
+
+void ALastBossAIController::ReStartBehaviorTree()
+{
+	if (BehaviorTree)
+	{
+		if (UBrainComponent* BrainComp = GetBrainComponent())
+		{
+			BrainComp->RestartLogic();
+		}
 	}
 }
 

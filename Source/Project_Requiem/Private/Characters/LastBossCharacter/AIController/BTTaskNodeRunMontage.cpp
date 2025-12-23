@@ -114,7 +114,7 @@ void UBTTaskNodeRunMontage::MontageEnded(UAnimMontage* Montage, bool bInterrupte
 	if (!CachedOwnerComp.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CachedOwnerComp에 저장된 캐시가 없습니다"));
-		FinishLatentTask(*CachedOwnerComp.Get(), EBTNodeResult::Failed);
+		return;
 	}
 
 	// 중간에 몽타주가 멈췄다면 Failed
@@ -133,7 +133,7 @@ void UBTTaskNodeRunMontage::MontageEnded(UAnimMontage* Montage, bool bInterrupte
 void UBTTaskNodeRunMontage::NextPhase()
 {
 	if (!CachedOwnerComp.IsValid())
-		FinishLatentTask(*CachedOwnerComp.Get(), EBTNodeResult::Failed);
+		return;
 
 	if (LastBoss.IsValid())
 	{

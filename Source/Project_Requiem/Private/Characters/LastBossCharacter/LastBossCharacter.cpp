@@ -20,8 +20,10 @@ void ALastBossCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AddPatternMontage();
+	// 보스 초기화
+	ResetLastBoss();
 
+	// 테스트용 보스 스폰
 	LastBossSpawn(SpawnMontage);
 }
 
@@ -30,7 +32,7 @@ void ALastBossCharacter::ReceiveDamage(float DamageAmount)
 	if (bLastBossInvincible)
 		return;
 
-	GetStatComponent()->CurrHP -= DamageAmount;
+	//GetStatComponent()->CurrHP -= DamageAmount;
 
 	OnBossStatUpdated.Broadcast(GetStatComponent()->CurrHP, GetStatComponent()->MaxHP, BossName);
 
@@ -121,14 +123,11 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 	// 페이즈 넘어가는 동안 피격 비활성화
 	bLastBossInvincible = true;
 
+	// 체력 초기화
+	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
+
 	// 페이즈 증가
 	Phase++;
-
-	// 저장된 페이즈2 스켈레탈 메시로 변경
-	GetMesh()->SetSkeletalMesh(PhaseTwoSkeletalMesh);
-
-	// 페이즈 변경 몽타주 종료 후 피격 활성화
-	bLastBossInvincible = false;
 
 	// 페이즈 변경 델리게이트 
 	OnLastBossChangedPhase.Broadcast();
@@ -147,24 +146,89 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PhaseChangeMontage가 없습니다"));
+		UE_LOG(LogTemp, Warning, TEXT("LastBossPhaseChage : 몽타주가 없습니다"));
 		return;
 	}
 }
 
 void ALastBossCharacter::LastBossEndPhaseChage(UAnimMontage* Montage, bool bInterrupted)
 {
+	// 즉시 몽타주 정지(애니메이션 블루프린트가 구(이전) 메시에 접근하지 않도록)
+	if (GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
+	}
 
-	OnLastBossEndChangedPhase.Broadcast();
+	// 교체 중 재피격 방지
+	bLastBossInvincible = true;
+
+	// 유효성 검사
+	if (!GetMesh())
+	{
+		UE_LOG(LogTemp, Error, TEXT("LastBossEndPhaseChage: Mesh가 없음"));
+		bLastBossInvincible = false;
+		OnLastBossEndChangedPhase.Broadcast();
+		return;
+	}
+	if (!PhaseTwoSkeletalMesh)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LastBossEndPhaseChage: PhaseTwoSkeletalMesh가 Null이다"));
+		bLastBossInvincible = false;
+		OnLastBossEndChangedPhase.Broadcast();
+		return;
+	}
+	// 스켈레톤 호환성 경고(필요시 에셋 교체 확인)
+	if (GetMesh()->SkeletalMesh && GetMesh()->SkeletalMesh->GetSkeleton() != PhaseTwoSkeletalMesh->GetSkeleton())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LastBossEndPhaseChage: 현재 메시가 PhaseTwoSkeletalMesh가 아님"));
+	}
+	if (!IsValid(this) || !GetMesh() || !PhaseTwoSkeletalMesh)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("LastBossEndPhaseChage: swap aborted, invalid pointers"));
+		bLastBossInvincible = false;
+		OnLastBossEndChangedPhase.Broadcast();
+		return;
+	}
+
+	// 메쉬 변경을 바로 하지 않고 아주 짧게 지연시켜 재진입 문제(델리게이트/애니메이션 BP)를 회피
+	FTimerHandle SwapTimerHandle;
+	GetWorldTimerManager().SetTimer(
+		SwapTimerHandle,
+		FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				// 실제 메쉬 교체
+				GetMesh()->SetSkeletalMesh(PhaseTwoSkeletalMesh);
+
+				// 본/애니메이션 상태 강제 갱신
+				GetMesh()->RefreshBoneTransforms();			// 애니메이션 블루프린트나 렌더가 이전 정보 접근 방지
+				GetMesh()->SetForcedLOD(0);					// LOD강제해서 렌더/애니메이션이 올바른 버텍스/본 데이터로 동작하도록 보장
+				GetMesh()->MarkRenderTransformDirty();		// 메시 교체로 인해 렌더러가 변환 최신값을 받아야 할 때 사용
+				GetMesh()->MarkRenderStateDirty();			// 렌더 상태를 강재로 재생성(시각적 불일치, 크래시 방지)
+
+				// 교체 완료 후 피격 허용
+				bLastBossInvincible = false;
+
+				OnLastBossEndChangedPhase.Broadcast();
+			}),
+		0.05f, // 0.05초 지연: 필요시 더 줄이거나 늘려 테스트
+		false
+	);
+	
 }
 
 void ALastBossCharacter::LastBossDead(UAnimMontage* Montage)
 {
+	// 몽타주 출력 방지를 위한 페이즈 초기화
 	Phase = 0;
 
+	// 무적 활성화
+	bLastBossInvincible = true;
+
+	// 실행 중인 몽타주 정지
 	GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
 
-	bLastBossInvincible = true;
+	// 보스 사망을 위한 AIController종료 델리게이트
+	OnLastBossStop.Broadcast();
 
 	if (Montage && GetMesh() && GetMesh()->GetAnimInstance())
 	{
@@ -189,9 +253,6 @@ void ALastBossCharacter::LastBossEndDead(UAnimMontage* Montage, bool bInterrupte
 	// 경험치 드랍
 	ApplyExp(DropExp);
 
-	// 보스 사망 델리게이트
-	OnLastBossDead.Broadcast();
-
 	Destroy();
 }
 
@@ -200,38 +261,34 @@ void ALastBossCharacter::ActivateBossBattle()
 	OnBossStatUpdated.Broadcast(GetStatComponent()->CurrHP, GetStatComponent()->MaxHP, BossName);
 
 	LastBossSpawn(SpawnMontage);
-
-	//// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
-	//// AI 활성화 (팀원이 쓰는 AIController 변수명 확인)
-	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
-	//	AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 다시 시작
-	//}
-	//// 공격성, 이동 속도 등 전투 상태로 변경
-	//GetCharacterMovement()->MaxWalkSpeed = 600.f;
-	//// UI 띄우기 등 추가 (예: Widget->SetVisibility(Visible))
 }
 
-// 3. 플레이어 패배 시 호출 (다시 재우기)
+
 void ALastBossCharacter::ResetBossToDefault()
 {
-	// 체력 초기화
+	// AIController 종료 델리게이트
+	OnLastBossStop.Broadcast();
+
+	// 위치 초기화
+	SetActorLocation(SpawnLocation);
+	SetActorRotation(FRotator::ZeroRotator);
+
+	// 체력 회복
 	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
 
-	//// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
-	//// AI 끄기
-	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
-	//	AIC->GetBrainComponent()->StopLogic("Player Defeated");
-	//}
-
-	//// 위치 초기화 및 체력 회복
-	//SetActorLocation(InitialLocation);
-	//SetActorRotation(FRotator::ZeroRotator);
-
-	//// 보스 스탯 컴포넌트가 있다면 (예시) => 체력 풀(Full)로 채우기
-	//// StatComponent->SetHP(StatComponent->GetMaxHP());
-
-	//// 애니메이션 몽타주 중지하고 Idle로
-	//GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
-
-	//// 플레이어 HUD초기화는 플레이어가 담당.
+	// 몽타주 종료
+	GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
 }
+
+void ALastBossCharacter::ResetLastBoss()
+{
+	// 몽타주 추가
+	AddPatternMontage();
+
+	// 스폰 위치 저장
+	SpawnLocation = GetActorLocation();
+
+	// 보스 스폰 시 무적 활성화
+	bLastBossInvincible = true;
+}
+
