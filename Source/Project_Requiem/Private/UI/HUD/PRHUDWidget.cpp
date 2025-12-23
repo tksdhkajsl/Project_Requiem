@@ -4,8 +4,10 @@
 #include "UI/HUD/PRHUDItemWidget.h"
 #include "UI/HUD/PRHUDPotionWidget.h"
 
+#include "Characters/Player/Character/PlayerCharacter.h"
 #include "Stats/StatComponent.h"
 #include "Engine/Texture2D.h"
+#include "Components/TextBlock.h"
 
 // ========================================================
 // 언리얼 기본 생성 및 초기화
@@ -14,6 +16,19 @@ void UPRHUDWidget::NativeConstruct()
 {
     Super::NativeConstruct();
     if (!BarHP || !BarST) UE_LOG(LogTemp, Warning, TEXT("PlayerHUD: Some UMG widgets failed to bind. Check names and 'Is Variable' settings!"));
+
+    APlayerController* PC = GetOwningPlayer();
+    if (!PC) return;
+
+    PC->GetOnNewPawnNotifier().AddUObject(this, &UPRHUDWidget::OnPawnChanged);
+    if (APawn* CurrentPawn = PC->GetPawn()) {
+        OnPawnChanged(CurrentPawn);
+        Player = Cast<APlayerCharacter>(CurrentPawn);
+        if (Player)
+        {
+            Player->OnInteractionPromptChanged.AddDynamic(this, &UPRHUDWidget::UpdateActionText);
+        }
+    }
 
     // StatBar�� �ʱ� ���� �� ���� ���� (���ķ� ���� ����)
     if (BarHP) {
@@ -34,13 +49,11 @@ void UPRHUDWidget::NativeConstruct()
     }
     if (PotionSlot && PotionImage) {
         PotionSlot->ItitItemImage(PotionImage);
+        Player->OnPotionChanged.AddDynamic(this, &UPRHUDWidget::UpdatePotionNum);
     }
-
-    APlayerController* PC = GetOwningPlayer();
-    if (!PC) return;
-
-    PC->GetOnNewPawnNotifier().AddUObject(this, &UPRHUDWidget::OnPawnChanged);
-    if (APawn* CurrentPawn = PC->GetPawn()) OnPawnChanged(CurrentPawn);
+    if (ActionTextValue) {
+        ActionTextValue->SetVisibility(ESlateVisibility::Hidden);
+    }
 }
 void UPRHUDWidget::BindToPawn(APawn* NewPawn)
 {
@@ -140,5 +153,16 @@ void UPRHUDWidget::UpdatePotionNum(int32 ItemNum)
     if (PotionSlot) {
         FText ItemNumText = FText::AsNumber(ItemNum);
         PotionSlot->ChangeItemNum(ItemNumText);
+    }
+}
+// ========================================================
+// 포션용 위젯
+// ========================================================
+void UPRHUDWidget::UpdateActionText(const FText& Text)
+{
+    if (Text.IsEmpty()) ActionTextValue->SetVisibility(ESlateVisibility::Hidden);
+    else {
+        ActionTextValue->SetText(Text);
+        ActionTextValue->SetVisibility(ESlateVisibility::Visible);
     }
 }

@@ -9,29 +9,26 @@
 UENUM(BlueprintType)
 enum class EFullStats : uint8
 {
-    None,
+    None UMETA(Hidden),
 
-#pragma region Tick Regen 가능한것들(타이머 틱)
     // -----------------------------
-    // 주요 자원(Resource)
+    // 힘 올릴시
     // -----------------------------
-    Health,
-    Stamina,
-#pragma endregion
+    Health         UMETA(DisplayName = "체력", Category = "Regen"),
+    PhysicalAttack UMETA(DisplayName = "물공", Category = "NoRegen"),
 
-#pragma region 실시간으로 변하는게 아닌 단일 로만 계산되는 애들
     // -----------------------------
-    // 공격 관련
+    // 민첩 올릴시
     // -----------------------------
-    PhysicalAttack,      // 물리 공격력
-    MagicAttack,         // 마법 공격력
-    // -----------------------------
-    // 방어 관련
-    // -----------------------------
-    PhysicalDefense,     // 물리 방어력
-    MagicDefense,        // 마법 방어력
+    Stamina     UMETA(DisplayName = "기력", Category = "Regen"),
+    AttackSpeed UMETA(DisplayName = "공속", Category = "NoRegen"),
 
-#pragma endregion
+    // -----------------------------
+    // 기타
+    // -----------------------------
+    MagicAttack     UMETA(DisplayName = "마공", Category = "NoRegen"),
+    PhysicalDefense UMETA(DisplayName = "물방", Category = "NoRegen"),
+    MagicDefense    UMETA(DisplayName = "마방", Category = "NoRegen"),
 
     MAX UMETA(Hidden)
 };

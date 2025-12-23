@@ -1,0 +1,170 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Characters/Player/Weapons/WeaponMasteryComponent.h"
+#include "Characters/Player/Character/PlayerCharacter.h" 
+#include "Characters/Player/Weapons/WeaponActor.h"
+
+#include "Core/PRPlayerController.h"
+#include "UI/HUD/PRHUDWidget.h"
+#include "UI/StatWidget/PRStatWidget.h"
+
+// Sets default values for this component's properties
+UWeaponMasteryComponent::UWeaponMasteryComponent()
+{
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
+	PrimaryComponentTick.bCanEverTick = false;
+
+	// ...
+}
+
+
+// Called when the game starts
+void UWeaponMasteryComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 시작 시 기본 스탯(F랭크)으로 초기화
+	UpdateStatsByRank(OneHandedMastery);
+	UpdateStatsByRank(TwoHandedMastery);
+	UpdateStatsByRank(DualBladeMastery);
+	
+}
+
+void UWeaponMasteryComponent::AddKillCount(EWeaponCode WeaponType)
+{
+	switch (WeaponType)
+	{
+	case EWeaponCode::OneHandedSword:
+	{
+		OneHandedMastery.CurrentKillCount++;
+		CheckRankUp(OneHandedMastery, EWeaponCode::OneHandedSword);
+	}
+		break;
+	case EWeaponCode::TwoHandedSword:
+	{
+		TwoHandedMastery.CurrentKillCount++;
+		CheckRankUp(TwoHandedMastery, EWeaponCode::TwoHandedSword);
+	}
+		break;
+	case EWeaponCode::DualBlade: // 쌍검
+	{
+		DualBladeMastery.CurrentKillCount++;
+		CheckRankUp(DualBladeMastery, EWeaponCode::DualBlade);
+	}
+		break;
+	default:
+		break;
+	}
+}
+
+//데이터 가져오기 함수
+FWeaponMasteryData UWeaponMasteryComponent::GetMasteryData(EWeaponCode WeaponType) const
+{
+	switch (WeaponType)
+	{
+	case EWeaponCode::OneHandedSword: return OneHandedMastery;
+	case EWeaponCode::TwoHandedSword: return TwoHandedMastery;
+	case EWeaponCode::DualBlade:      return DualBladeMastery;
+	}
+	return FWeaponMasteryData(); // 기본값 반환
+}
+
+void UWeaponMasteryComponent::CheckRankUp(FWeaponMasteryData& MasteryData, EWeaponCode WeaponType)
+{
+	// S랭크면 더 이상 성장 안 함
+	if (MasteryData.CurrentRank == EWeaponRank::S) return;
+
+	// 현재 킬 수가 목표(Max)를 넘었는지 확인
+	if (MasteryData.CurrentKillCount >= MasteryData.MaxKillCount)
+	{
+		// 랭크 승급 (Enum 값을 1 증가)
+		uint8 NextRankByte = (uint8)MasteryData.CurrentRank + 1;
+		MasteryData.CurrentRank = (EWeaponRank)NextRankByte;
+
+		// 킬 카운트 초기화 (누적식이면 이 줄 삭제)
+		MasteryData.CurrentKillCount = 0;
+
+		// 바뀐 랭크에 맞춰 스탯(크확, 크뎀, 다음 목표) 갱신
+		UpdateStatsByRank(MasteryData);
+
+		UE_LOG(LogTemp, Log, TEXT("Weapon Rank Up! New Rank: %d"), (int32)MasteryData.CurrentRank);
+
+		// 1. 이 컴포넌트의 주인(플레이어)을 찾습니다.
+		APlayerCharacter* Player = Cast<APlayerCharacter>(GetOwner());
+
+		if (Player)
+		{
+			// =================================================================
+			// [A] VFX 업데이트 (들고 있는 무기일 경우)
+			// =================================================================
+			if (Player->GetCurrentWeaponType() == WeaponType)
+			{
+				if (AWeaponActor* CurrentWeapon = Player->GetCurrentWeapon())
+				{
+					CurrentWeapon->UpdateVFXByRank(MasteryData.CurrentRank);
+				}
+			}
+		}
+	}
+}
+
+void UWeaponMasteryComponent::UpdateStatsByRank(FWeaponMasteryData& MasteryData)
+{
+	switch (MasteryData.CurrentRank)
+	{
+	case EWeaponRank::F: // 0.0, 1.0, 목표 3마리
+	{
+		MasteryData.CritRate = 0.0f;
+		MasteryData.CritDamage = 1.0f;
+		MasteryData.MaxKillCount = 3;
+	}
+		break;
+	case EWeaponRank::E: // 0.1, 1.2, 목표 5마리
+	{
+		MasteryData.CritRate = 0.1f;
+		MasteryData.CritDamage = 1.2f;
+		MasteryData.MaxKillCount = 5;
+	}
+		break;
+	case EWeaponRank::D: // 0.2, 1.4, 목표 7마리
+	{
+		MasteryData.CritRate = 0.2f;
+		MasteryData.CritDamage = 1.4f;
+		MasteryData.MaxKillCount = 7;
+	}
+		break;
+	case EWeaponRank::C: // 0.3, 1.5, 목표 9마리
+	{
+		MasteryData.CritRate = 0.3f;
+		MasteryData.CritDamage = 1.5f;
+		MasteryData.MaxKillCount = 9;
+	}
+		break;
+	case EWeaponRank::B: // 0.4, 1.6, 목표 11마리
+	{
+		MasteryData.CritRate = 0.4f;
+		MasteryData.CritDamage = 1.6f;
+		MasteryData.MaxKillCount = 11;
+	}
+		break;
+	case EWeaponRank::A: // 0.45, 1.8, 목표 13마리
+	{
+		MasteryData.CritRate = 0.45f;
+		MasteryData.CritDamage = 1.8f;
+		MasteryData.MaxKillCount = 13;
+	}
+		break;
+	case EWeaponRank::S: // 0.5, 2.0, 끝
+	{
+		MasteryData.CritRate = 0.5f;
+		MasteryData.CritDamage = 2.0f;
+		MasteryData.MaxKillCount = 999999; // 맥스
+	}
+		break;
+	}
+}
+
+
+

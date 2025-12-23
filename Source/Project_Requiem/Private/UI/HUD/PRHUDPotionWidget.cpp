@@ -2,7 +2,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 // ========================================================
-// æ∏ÆæÛ ±‚∫ª ª˝º∫
+// Ïñ∏Î¶¨Ïñº Í∏∞Î≥∏ ÏÉùÏÑ±
 // ========================================================
 void UPRHUDPotionWidget::ItitItemImage(UTexture2D* NewTexture)
 {
@@ -14,7 +14,7 @@ void UPRHUDPotionWidget::NativeConstruct()
     if (!ItemNumText)   UE_LOG(LogTemp, Error, TEXT("ItemNum (TextBlock) is not bound in UMG!"));
 }
 // ========================================================
-// UI ∫Ø∞ÊøÎ
+// UI Î≥ÄÍ≤ΩÏö©
 // ========================================================
 void UPRHUDPotionWidget::ChangeItemNum(const FText& NewName)
 {

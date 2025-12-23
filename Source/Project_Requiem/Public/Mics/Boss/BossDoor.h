@@ -2,28 +2,30 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interface/Characters/InteractionInterface.h"
+#include "Characters/Player/Character/PlayerCharacter.h"
 #include "BossDoor.generated.h"
 
 // 델리게이트: 문 열림 후 보스에게 알림
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossDoorOpened);
 
 UCLASS()
-class PROJECT_REQUIEM_API ABossDoor : public AActor
+class PROJECT_REQUIEM_API ABossDoor : public AActor, public IInteractionInterface
 {
-	GENERATED_BODY()
-	
-#pragma region 델리게이트
+    GENERATED_BODY()
+
+    #pragma region 델리게이트
 public:
-	// 문 열림 이벤트 델리게이트
-	UPROPERTY(BlueprintAssignable)
-	FOnBossDoorOpened OnDoorOpened;
+    // 문 열림 이벤트 델리게이트
+    UPROPERTY(BlueprintAssignable)
+    FOnBossDoorOpened OnDoorOpened;
 #pragma endregion
 
 #pragma region 언리얼 생성
 public:
-	ABossDoor();
+    ABossDoor();
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
 #pragma endregion
 
 
@@ -90,5 +92,14 @@ protected:
     // 컷신 재생용 애니메이션
     UPROPERTY(EditAnywhere)
     UAnimationAsset* DoorOpenAnim;
+#pragma endregion
+
+#pragma region Interaction Interface
+public:
+    virtual bool CanInteract_Implementation(const APlayerCharacter* Caller) const override;
+    virtual FText GetInteractionText_Implementation(const APlayerCharacter* Caller) const override;
+    virtual void Interact_Implementation(APlayerCharacter* Caller) override;
+private:
+    bool bIsOpened = false;
 #pragma endregion
 };

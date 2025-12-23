@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class Project_RequiemEditorTarget : TargetRules
 {
-	public Project_RequiemEditorTarget(TargetInfo Target) : base(Target)
+	public Project_RequiemEditorTarget( TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V5;

@@ -53,4 +53,11 @@ struct FCoreStat
         : Current(InCurrent), Max(InMax), TickRate(InTickRate)
     {
     }
+    /*
+     * @brief 클램프용
+    */
+    void Clamp()
+    {
+        Current = FMath::Clamp(Current, 0.f, Max);
+    }
 };

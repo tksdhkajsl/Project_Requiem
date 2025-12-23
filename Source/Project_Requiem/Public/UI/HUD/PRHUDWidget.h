@@ -10,6 +10,8 @@ class UPRHUDBossWidget;
 class UPRHUDItemWidget;
 class UPRHUDPotionWidget;
 class UTexture2D;
+class UTextBlock;
+class APlayerCharacter;
 
 UCLASS()
 class PROJECT_REQUIEM_API UPRHUDWidget : public UUserWidget
@@ -94,5 +96,17 @@ public:
     UTexture2D* PotionImage;
 #pragma endregion
 
+#pragma region 인터렉션
+public:
+    UFUNCTION(BlueprintCallable)
+    void UpdateActionText(const FText& text);
 
+    UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+    UTextBlock* ActionTextValue;
+#pragma endregion
+
+#pragma region MyRegion
+    UPROPERTY(BlueprintReadOnly)
+    TObjectPtr<APlayerCharacter> Player;
+#pragma endregion
 };

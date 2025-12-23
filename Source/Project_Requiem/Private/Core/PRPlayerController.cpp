@@ -1,8 +1,9 @@
 #include "Core/PRPlayerController.h"
 #include "UI/HUD/PRHUDWidget.h"
 #include "UI/StatWidget/PRStatWidget.h"
-
-#include "Character/BaseCharacter.h"
+//
+#include "Characters/BaseCharacter.h"
+#include "Characters/Player/Character/PlayerCharacter.h"
 #include "Stats/StatComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 // ========================================================
@@ -13,6 +14,7 @@ APRPlayerController::APRPlayerController()
 }
 void APRPlayerController::BeginPlay()
 {
+
 	if (HUDWidgetClass) {
 		PlayerHUD = CreateWidget<UPRHUDWidget>(this, HUDWidgetClass);
 		if (PlayerHUD) {
@@ -51,7 +53,11 @@ void APRPlayerController::PushDownKeyboard3()
 }
 void APRPlayerController::PushDownKeyboard4(int32 PotionNum)
 {
-	PlayerHUD->UpdatePotionNum(PotionNum);
+	int32 Potion = PotionNum - 1;
+	APawn* PlayerPawn = GetPawn();
+	UStatComponent* PlayerStatComp = PlayerPawn ? Cast<ABaseCharacter>(PlayerPawn)->GetStatComponent() : nullptr;
+	PlayerStatComp->ChangeStatCurrent(EFullStats::Health, 10);
+	PlayerHUD->UpdatePotionNum(Potion);
 }
 // ========================================================
 // 보스 관련 HUD 갱신
@@ -125,7 +131,7 @@ void APRPlayerController::HandleStatInput()
 void APRPlayerController::OnStatWindowOpened()
 {
 	APawn* PlayerPawn = GetPawn();
-	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PlayerPawn);
 	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
 
 	if (CaptureComp) {
@@ -138,7 +144,7 @@ void APRPlayerController::OnStatWindowOpened()
 void APRPlayerController::OnStatWindowClosed()
 {
 	APawn* PlayerPawn = GetPawn();
-	ABaseCharacter* PlayerChar = Cast<ABaseCharacter>(PlayerPawn);
+	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(PlayerPawn);
 	USceneCaptureComponent2D* CaptureComp = PlayerChar ? PlayerChar->GetPortraitCaptureComponent() : nullptr;
 
 	if (CaptureComp) {
