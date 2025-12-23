@@ -79,6 +79,9 @@ public:
     FVector HomeLocation;
     /** 스폰 회전 저장 (리스폰 시 원상복구용) */
     FRotator HomeRotation;
+    // 플레이어 발견 시 재생할 소리 (하울링, 경고음 등)
+    UPROPERTY(EditAnywhere, Category = "Audio")
+    USoundBase* DetectSound;
 
     /** 배회 반경 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Patrol")
@@ -113,7 +116,11 @@ public:
 
     /** 실제 타격 판정 (애니메이션 노티파이에서 호출) */
     UFUNCTION(BlueprintCallable)
-    void AttackHitCheck();
+    virtual void AttackHitCheck();
+
+    // 근접 공격 성공 시 재생할 타격음
+    UPROPERTY(EditAnywhere, Category = "Combat")
+    USoundBase* MeleeHitSound;
 
     float GetAttackDamage() const;
 };

@@ -225,24 +225,19 @@ void AEnemyCharacter::UpdateAIState()
 
     if (!Player || !AIC) return;
 
-    // [중요] 공격 중이면 이동 정지 (미끄러짐 방지)
+    // 공격 중이면 멈춤
     if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
     {
         AIC->StopMovement();
-
-        // 공격 중 플레이어 바라보기
-        FVector Dir = (Player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-        Dir.Z = 0.0f;
-        FRotator TargetRot = FRotator(0, Dir.Rotation().Yaw, 0);
-        SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 15.0f));
-
-        return; // 로직 종료
+        // ... (회전 로직) ...
+        return;
     }
 
     float Distance = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
 
-    // 상태 변경 체크
+    // 1. 새로운 상태 결정 (NewState)
     EEnemyState NewState = CurrentState;
+
     if (Distance <= AttackRange)
     {
         NewState = EEnemyState::Attack;
@@ -256,11 +251,32 @@ void AEnemyCharacter::UpdateAIState()
         NewState = EEnemyState::Patrol;
     }
 
-    // 상태가 바뀌면 패트롤 대기 타이머 취소 (대기하다가 쫓아가야 하므로)
+    // =========================================================
+    // [핵심] 상태 변경 감지 및 하울링 재생
+    // =========================================================
+
+    // "이전에는 추격 상태가 아니었는데(Patrol 등), 방금 추격 상태(Chase)가 되었다면?"
+    if (CurrentState != EEnemyState::Chase && NewState == EEnemyState::Chase)
+    {
+        // 공격하다가 추격으로 바뀐 게 아니라, '순찰' 중에 발견했을 때만 울게 하려면:
+        if (CurrentState == EEnemyState::Patrol)
+        {
+            if (DetectSound)
+            {
+                UGameplayStatics::PlaySoundAtLocation(this, DetectSound, GetActorLocation());
+                // (선택 사항) 로그 출력
+                // UE_LOG(LogTemp, Warning, TEXT("Howling!")); 
+            }
+        }
+    }
+
+    // 패트롤 타이머 취소 로직
     if (CurrentState == EEnemyState::Patrol && NewState != EEnemyState::Patrol)
     {
         GetWorldTimerManager().ClearTimer(PatrolTimerHandle);
     }
+
+    // 2. 상태 적용
     CurrentState = NewState;
 
     // 상태별 행동
@@ -323,6 +339,7 @@ void AEnemyCharacter::PerformAttack()
 
 void AEnemyCharacter::AttackHitCheck()
 {
+    // 1. 공격 범위 설정 
     FVector Start = GetActorLocation() + GetActorForwardVector() * 50.0f;
     FVector End = Start + GetActorForwardVector() * 100.0f;
     float Radius = 50.0f;
@@ -331,16 +348,24 @@ void AEnemyCharacter::AttackHitCheck()
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
 
+    // 2. 충돌 검사 (Sweep)
     bool bHit = GetWorld()->SweepSingleByChannel(
         HitResult, Start, End, FQuat::Identity,
         ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params
     );
 
-    // DrawDebugSphere(GetWorld(), End, Radius, 12, FColor::Red, false, 1.0f);
-
+    // 3. 데미지 및 소리 적용
     if (bHit && HitResult.GetActor())
     {
-        // Cast를 사용하여 Tag 없이도 플레이어 판정
+        // 타격음 재생 로직
+        // 허공에 휘두를 땐 소리가 안 나고, 무언가에 맞았을 때만 남
+        if (MeleeHitSound)
+        {
+            // HitResult.Location : 정확히 맞은 지점에서 소리가 남
+            UGameplayStatics::PlaySoundAtLocation(this, MeleeHitSound, HitResult.Location);
+        }
+
+        // 데미지 적용 
         APlayerCharacter* Player = Cast<APlayerCharacter>(HitResult.GetActor());
         if (Player)
         {
