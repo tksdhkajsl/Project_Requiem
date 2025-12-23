@@ -55,7 +55,7 @@ void ULockOnComponent::StartLockOn()
 		CurrentTarget = NewTarget;
 		bIsLockedOn = true;
 
-		// 락온 시: 캐릭터가 항상 적을 바라보며 이동 (게걸음)
+		// 락온 시: 캐릭터가 항상 적을 바라보며 이동
 		if (OwnerCharacter)
 		{
 			OwnerCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
@@ -91,7 +91,7 @@ AActor* ULockOnComponent::FindBestTarget()
 
 	TArray<AActor*> OutActors;
 
-	// 1. 내 주변 구체 범위 내의 모든 Pawn 찾기
+	// 내 주변 구체 범위 내의 모든 Pawn 찾기
 	UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		Start,
@@ -131,7 +131,7 @@ AActor* ULockOnComponent::FindBestTarget()
 
 void ULockOnComponent::UpdateTargetLock(float DeltaTime)
 {
-	// 타겟 유효성 검사 (사라졌거나 죽었거나)
+	// 타겟 유효성 검사 (사라졌으면 락온 해제)
 	if (!IsValid(CurrentTarget))
 	{
 		EndLockOn();
@@ -139,6 +139,7 @@ void ULockOnComponent::UpdateTargetLock(float DeltaTime)
 	}
 
 	ABaseCharacter* Enemy = Cast<ABaseCharacter>(CurrentTarget);
+	// 타겟 유효성 검사 (적이 죽었으면 락온 해제)
 	if (Enemy && Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)
 	{
 		EndLockOn();
@@ -157,7 +158,7 @@ void ULockOnComponent::UpdateTargetLock(float DeltaTime)
 	if (PlayerController)
 	{
 		FVector TargetLoc = CurrentTarget->GetActorLocation();
-		TargetLoc.Z -= 50.0f; // 시선을 살짝 낮춤 (적의 배꼽 쯤)
+		TargetLoc.Z -= 30.0f; // 시선을 살짝 낮춤
 
 		FVector LookDir = TargetLoc - OwnerCharacter->GetActorLocation(); // 카메라 위치가 아니라 캐릭터 위치 기준이 더 안정적일 수 있음
 		// 정확히는 "카메라가 적을 보게" 해야 하므로:

@@ -207,6 +207,10 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<UAnimInstance> AnimInstance = nullptr;
 
+	// 구르기 몽타주가 끝났을 때 호출될 함수
+	UFUNCTION()
+	void OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 protected:
 	// [추가] 크리티컬 발생 시 사용할 카메라 셰이크 클래스 (블루프린트에서 할당)
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")

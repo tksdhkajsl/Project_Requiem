@@ -324,10 +324,22 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	// 입력 방향으로 회전 (이동 키를 누르고 있을 때만)
 	if (!GetLastMovementInputVector().IsNearlyZero())
 	{
-		SetActorRotation(GetLastMovementInputVector().Rotation());
+		// 입력한 방향으로 캐릭터를 즉시 회전시킵니다.
+		FRotator InputRot = GetLastMovementInputVector().Rotation();
+		SetActorRotation(InputRot);
+
+		// 락온 중이라도 "타겟 바라보기"를 잠시 끕니다.
+		// (안 끄면 Tick에서 다시 타겟 방향으로 강제 회전됨)
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
 	}
 	// 구르기 몽타주 재생
 	PlayAnimMontage(RollMontage);
+
+	// 몽타주 종료 델리게이트 연결 (끝나면 원래대로 복구하기 위함)
+	FOnMontageEnded EndDelegate;
+	EndDelegate.BindUObject(this, &ThisClass::OnRollMontageEnded);
+	AnimInstance->Montage_SetEndDelegate(EndDelegate, RollMontage);
 }
 void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
 {
@@ -643,6 +655,16 @@ void APlayerCharacter::OnAttackEnable(bool bEnable)
 	}
 }
 
+
+void APlayerCharacter::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	// 락온 컴포넌트가 있고, 현재 락온 중이라면 -> 다시 "타겟 바라보기" 모드로 복구
+	if (LockOnComponent && LockOnComponent->bIsLockedOn)
+	{
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+}
 
 void APlayerCharacter::AddExp(float Amount)
 {
