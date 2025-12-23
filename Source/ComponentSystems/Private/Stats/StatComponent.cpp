@@ -86,17 +86,31 @@ bool UStatComponent::AllocatedLevelUpStat(ELevelUpStats StatType)
 }
 void UStatComponent::UpgradeStrength()
 {
-	if (FCoreStat* HealthStat = StatsRegenMap.Find(EFullStats::Health)) HealthStat->Max *= 1.1f;
-	if (FCoreStat* PhyAttStat = StatsNonRegenMap.Find(EFullStats::PhysicalAttack)) PhyAttStat->Current *= 1.1f;
-
+	// 힘 증가 -> 최대 체력 & 물리 공격력 증가
+	if (FCoreStat* HealthStat = StatsRegenMap.Find(EFullStats::Health))
+	{
+		HealthStat->Max *= 1.1f; // 최대 체력 10% 증가
+		HealthStat->Current = HealthStat->Max; // 레벨업 시 체력 회복
+	}
+	if (FCoreStat* PhyAttStat = StatsNonRegenMap.Find(EFullStats::PhysicalAttack))
+	{
+		PhyAttStat->Current *= 1.1f; // 물공 10% 증가
+	}
 	BroadcastStats(StatsRegenMap, OnRegenStatsUpdated);
 	BroadcastStats(StatsNonRegenMap, OnNonRegenStatsUpdated);
 }
 void UStatComponent::UpgradeDexterity()
 {
-	if (FCoreStat* StaminaStat = StatsRegenMap.Find(EFullStats::Stamina)) StaminaStat->Max *= 1.1f;
-	if (FCoreStat* AttSpeedStat = StatsNonRegenMap.Find(EFullStats::AttackSpeed)) AttSpeedStat->Current *= 1.1f;
-	
+	// 민첩 증가 -> 최대 기력 & 공격 속도 증가
+	if (FCoreStat* StaminaStat = StatsRegenMap.Find(EFullStats::Stamina))
+	{
+		StaminaStat->Max *= 1.1f; // 최대 스태미너 10% 증가
+	}
+	if (FCoreStat* AttSpeedStat = StatsNonRegenMap.Find(EFullStats::AttackSpeed))
+	{
+		// 0.03씩 증가 (3% 빨라짐)
+		AttSpeedStat->Current += 0.03f;
+	}
 	BroadcastStats(StatsRegenMap, OnRegenStatsUpdated);
 	BroadcastStats(StatsNonRegenMap, OnNonRegenStatsUpdated);
 }
@@ -161,15 +175,20 @@ void UStatComponent::HandleStatRegeneration()
 	static UEnum* EnumPtr = StaticEnum<EFullStats>();
 	for (auto& Pair : StatsRegenMap) {
 		FCoreStat& Stat = Pair.Value;
+		// 스태미너이고, 일시정지 상태라면 회복 건너뜀
+		if (Pair.Key == EFullStats::Stamina && bIsStaminaRegenPaused)
+		{
+			continue;
+		}
+
 		if (!FMath::IsNearlyZero(Stat.TickRate)) {
 			Stat.Current = FMath::Clamp(Stat.Current + Stat.TickRate * TimerTick, 0.f, Stat.Max);
 			OnRegenStatChanged.Broadcast(Pair.Key, Stat.Current, Stat.Max);
-
 			//const FString StatName = EnumPtr
 			//	? EnumPtr->GetNameStringByValue((int64)Pair.Key)
 			//	: TEXT("Unknown");
 
-			//UE_LOG(LogTemp, Log, TEXT("[REGEN] %s �� %.2f / %.2f  (TickRate: %.2f)"),
+			//UE_LOG(LogTemp, Log, TEXT("[REGEN] %s    %.2f / %.2f  (TickRate: %.2f)"),
 			//	*StatName,
 			//	Stat.Current,
 			//	Stat.Max,

@@ -1,6 +1,7 @@
 #include "Characters/Player/Character/PlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Camera/CameraShakeBase.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Characters/Player/Weapons/WeaponManagerComponent.h"
@@ -345,8 +346,6 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	// 4. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
 	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
 
-	
-
 	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
 	switch (WeaponIndex)
 	{
@@ -490,21 +489,32 @@ void APlayerCharacter::PlayComboAttack()
 		bIsSprint = false;
 		GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	}
+	// 공격 속도 멤버 변수 생성
+	float AttackSpeed = 0.f;
+	if (StatComponent)
+	{
+		// 현재 공격 속도를 StatComponent에서 가져와 저장
+		AttackSpeed = StatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+		// 너무 느리거나 빨라지지 않게 안전장치 (0.5배 ~ 2.5배)
+		AttackSpeed = FMath::Clamp(AttackSpeed, 0.5f, 2.5f);
 
+		//공격을 시도하면 무조건 스태미너 회복을 멈춥니다.
+		StatComponent->SetStaminaRegenPaused(true);
+	}
 	// =============================================================
 	// 상황 1: 아무 몽타주도 재생 중이 아닐 때 (1타 공격 시작)
 	// =============================================================
-	if (StatComponent->GetStatCurrent(EFullStats::Stamina) < ConsumeStamina) {
-		// 만일 스태미나가 남아 있지 않다면(1번째 공격보다 스태미나가 적다면), 무시
-		return;
+	if (StatComponent->GetStatCurrent(EFullStats::Stamina) < ConsumeStamina)
+	{
+		return; // 스태미너 부족 시 공격 불가
 	}
 	else if (!AnimInst->IsAnyMontagePlaying())
 	{
 		bIsAttacking = true;
 		CurrentCombo = 1; // 1타부터 시작
 
-		// 몽타주 재생 시작
-		AnimInst->Montage_Play(CurrentComboMontage);
+		// 몽타주 재생 시 Speed 적용
+		AnimInst->Montage_Play(CurrentComboMontage, AttackSpeed);
 
 		// "Attack1" 섹션 재생
 		FName SectionName = *FString::Printf(TEXT("Attack%d"), CurrentCombo);
@@ -531,6 +541,10 @@ void APlayerCharacter::PlayComboAttack()
 
 		// 해당 섹션으로 점프 (이게 SectionJumpForCombo 역할)
 		AnimInst->Montage_JumpToSection(SectionName, CurrentComboMontage);
+
+		// 콤보 연계 시에도 속도가 바뀌었을 수 있으니 PlayRate 재설정
+		AnimInst->Montage_SetPlayRate(CurrentComboMontage, AttackSpeed);
+
 		StatComponent->ChangeStatCurrent(EFullStats::Stamina, -ConsumeStamina);
 	}
 }
@@ -555,7 +569,11 @@ void APlayerCharacter::ProcessWeaponHit(AActor* TargetActor)
 		{
 			FinalDamage *= MasteryData.CritDamage;
 
-			// (필요시) 크리티컬 이펙트나 사운드 재생, 카메라 흔들림 등 추가
+			if (CriticalCameraShakeClass)
+			{
+				// 진원지: 타격된 적의 위치, 반경: 500 정도면 적당
+				UGameplayStatics::PlayWorldCameraShake(GetWorld(), CriticalCameraShakeClass, TargetActor->GetActorLocation(), 0.f, 500.f);
+			}
 			// UE_LOG(LogTemp, Warning, TEXT("Critical Hit!"));
 		}
 	}
@@ -569,6 +587,12 @@ void APlayerCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterru
 	bIsAttacking = false;
 	bIsNextAttackRequested = false;
 	CurrentCombo = 0;
+
+	// 공격이 끝났으므로 스태미너 회복 재개
+	if (StatComponent)
+	{
+		StatComponent->SetStaminaRegenPaused(false);
+	}
 }
 
 void APlayerCharacter::CheckComboInput()

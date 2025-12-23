@@ -13,6 +13,7 @@
 class UInputConfig;
 class USceneCaptureComponent2D;
 class UPlayerDeathWidget;
+class UCameraShakeBase;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractionPromptChanged, const FText&, Text);
@@ -141,6 +142,7 @@ public:
 	// 무기에서 호출할 충돌 처리 함수
 	UFUNCTION()
 	void ProcessWeaponHit(AActor* TargetActor);
+
 	// 몽타주 종료 시 호출될 델리게이트
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -185,6 +187,7 @@ protected:
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")
 	float SprintSpeed = 1200.0f;
+	
 	// 걷기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Movement")
 	float WalkSpeed = 600.0f;
@@ -200,6 +203,14 @@ protected:
 private:
 	UPROPERTY()
 	TWeakObjectPtr<UAnimInstance> AnimInstance = nullptr;
+
+protected:
+	// [추가] 크리티컬 발생 시 사용할 카메라 셰이크 클래스 (블루프린트에서 할당)
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	TSubclassOf<UCameraShakeBase> CriticalCameraShakeClass;
+
+	// [추가] 현재 공격 속도를 계산해서 가져오는 헬퍼 함수
+	float GetAttackSpeedRate() const;
 
 public:
 	/*
