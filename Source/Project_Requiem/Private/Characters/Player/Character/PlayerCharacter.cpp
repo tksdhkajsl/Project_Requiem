@@ -262,7 +262,7 @@ void APlayerCharacter::InputInteract()
 // ========================================================
 void APlayerCharacter::Move(const FInputActionValue& Value)
 {
-	// [추가] 공격 중이면 이동 불가
+	// 공격 중이면 이동 불가
 	if (bIsAttacking) return;
 
 	FVector2D MovementVector = Value.Get<FVector2D>();

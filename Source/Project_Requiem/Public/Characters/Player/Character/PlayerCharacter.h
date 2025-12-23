@@ -216,9 +216,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TSubclassOf<UCameraShakeBase> CriticalCameraShakeClass;
 
-	// [추가] 현재 공격 속도를 계산해서 가져오는 헬퍼 함수
-	float GetAttackSpeedRate() const;
-
 public:
 	/*
 	 * 25/12/17 코드 추가 : 변경자 천수호
