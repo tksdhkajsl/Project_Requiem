@@ -73,3 +73,8 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Content 내부 경로 (커밋에서 제외할 에셋/맵/레거시 폴더)
+Content/Assets/
+Content/Maps/
+Content/z_Legacy/
