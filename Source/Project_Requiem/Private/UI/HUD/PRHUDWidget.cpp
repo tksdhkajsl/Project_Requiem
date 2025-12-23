@@ -50,6 +50,7 @@ void UPRHUDWidget::NativeConstruct()
     if (PotionSlot && PotionImage) {
         PotionSlot->ItitItemImage(PotionImage);
         Player->OnPotionChanged.AddDynamic(this, &UPRHUDWidget::UpdatePotionNum);
+        UpdatePotionNum(Player->GetHPPotion());
     }
     if (ActionTextValue) {
         ActionTextValue->SetVisibility(ESlateVisibility::Hidden);
