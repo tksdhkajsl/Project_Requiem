@@ -200,6 +200,7 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
+
 	if (!bBlockAttackTransition)
 	{
 		if (DistanceToTarget <= MeleeZoneMaxRange)
