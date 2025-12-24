@@ -5,15 +5,27 @@
 #include "Stats/StatComponent.h"
 #include "Stats/Data/ELevelUpStats.h"
 #include "Stats/Data/EFullStats.h"
+
+#include "Characters/Player/Weapons/WeaponMasteryComponent.h"
 #include "Weapon/WeaponCodeEnum.h"
 
+#include "UObject/EnumProperty.h"
+
+// ========================================================
+// 헬퍼함수
+// ========================================================
+static FText GetWeaponRankDisplayName(EWeaponRank Rank)
+{
+    const UEnum* Enum = StaticEnum<EWeaponRank>();
+    if (!Enum) return FText::GetEmpty();
+
+    return Enum->GetDisplayNameTextByValue(static_cast<int64>(Rank));
+}
 // ========================================================
 // 언리얼 기본 생성
 // ========================================================
 void UPRStatWidget::NativeConstruct()
 {
-    Super::NativeConstruct();
-
     if (!SoulValueText) UE_LOG(LogTemp, Error, TEXT("StrValueText (TextBlock) is not bound in UMG!"));
 
     if (StatRenderList) {
@@ -23,8 +35,6 @@ void UPRStatWidget::NativeConstruct()
 }
 void UPRStatWidget::NativeDestruct()
 {
-    Super::NativeDestruct();
-
     if (CachedStatComponent) {
         CachedStatComponent->OnLevelUpStatsUpdated.RemoveDynamic(this, &UPRStatWidget::HandleBasicStatUpdate);
         CachedStatComponent->OnRegenStatChanged.RemoveDynamic(this, &UPRStatWidget::HandleRegenStatUpdate);
@@ -33,34 +43,6 @@ void UPRStatWidget::NativeDestruct()
     if (StatRenderList) StatRenderList->OnRequestLevelUpStat.RemoveAll(this);
 
     Super::NativeDestruct();
-}
-void UPRStatWidget::UpdateWeaponRank(EWeaponCode WeaponCode, EWeaponRank NewRank)
-{
-    FText RankText = GetRankText(NewRank);
-
-    switch (WeaponCode)
-    {
-    case EWeaponCode::OneHandedSword:
-        if (Text_OneHandedRank) Text_OneHandedRank->SetText(RankText);
-        break;
-
-    case EWeaponCode::TwoHandedSword:
-        if (Text_TwoHandedRank) Text_TwoHandedRank->SetText(RankText);
-        break;
-
-    case EWeaponCode::DualBlade:
-        if (Text_DualBladeRank) Text_DualBladeRank->SetText(RankText);
-        break;
-    }
-}
-FText UPRStatWidget::GetRankText(EWeaponRank Rank)
-{
-    const UEnum* RankEnum = StaticEnum<EWeaponRank>();
-    if (RankEnum)
-    {
-        return RankEnum->GetDisplayNameTextByValue((int64)Rank);
-    }
-    return FText::FromString(TEXT("?"));
 }
 // ========================================================
 // 스탯컴포넌트 캐싱용
@@ -103,6 +85,8 @@ void UPRStatWidget::InitializeStatValues()
 
     float PhyAtt = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
     StatRenderList->UpdateSingleStat(EFullStats::PhysicalAttack, PhyAtt);
+    float AttSpeed = CachedStatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+    StatRenderList->UpdateSingleStat(EFullStats::AttackSpeed, AttSpeed);
     float MagAtt = CachedStatComponent->GetStatCurrent(EFullStats::MagicAttack);
     StatRenderList->UpdateSingleStat(EFullStats::MagicAttack, MagAtt);
     float PhyDef = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalDefense);
@@ -128,4 +112,22 @@ void UPRStatWidget::HandleRequestLevelUpStat(ELevelUpStats StatType)
     if (!CachedStatComponent) return;
 
     CachedStatComponent->AllocatedLevelUpStat(StatType);
+}
+// ========================================================
+// 웨폰마스터리
+// ========================================================
+void UPRStatWidget::SetWeaponMasteryComponent(UWeaponMasteryComponent* Component)
+{
+    if (Component) {
+        CachedWeaponMastery = Component;
+
+        FWeaponMasteryData data = CachedWeaponMastery->GetMasteryData(EWeaponCode::OneHandedSword);
+        const FWeaponMasteryData Onehand = Component->GetMasteryData(EWeaponCode::OneHandedSword);
+        const FWeaponMasteryData Twohand = Component->GetMasteryData(EWeaponCode::TwoHandedSword);
+        const FWeaponMasteryData Dual = Component->GetMasteryData(EWeaponCode::DualBlade);
+
+        if (TextOnehand) TextOnehand->SetText(GetWeaponRankDisplayName(Onehand.CurrentRank));
+        if (TextTwohand) TextTwohand->SetText(GetWeaponRankDisplayName(Twohand.CurrentRank));
+        if (TextDual) TextDual->SetText(GetWeaponRankDisplayName(Dual.CurrentRank));
+    }
 }

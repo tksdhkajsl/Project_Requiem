@@ -7,8 +7,6 @@
 #include "Bonfire.generated.h"
 
 class UBoxComponent;
-class UNiagaraComponent;
-class UNiagaraSystem;
 class UBonfireWidget;
 
 UENUM(BlueprintType)
@@ -34,31 +32,19 @@ protected:
 #pragma endregion
 
 public:
+	/// 코드 변경 : 12/24 (타입안정성을 위해서 UUserWidget->UBonfireWidget 변경)
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UBonfireWidget> BonfireWidgetClass;
 	UPROPERTY()
 	TObjectPtr<UBonfireWidget> BonfireWidget;
 
-
 protected:
 	// 상호작용 범위 충돌체
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UBoxComponent* InteractionBox;
-
 	// 화톳불 메쉬
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	UStaticMeshComponent* Mesh;
-
-	/* 
-	*  25/12/17 코드 추가 : 천수호
-	*  추가 사유 : 나이아가라 이펙트 추가
-	*/
-	UPROPERTY(VisibleAnywhere, Category = "Components")
-	UNiagaraComponent* FireEffect;
-	UPROPERTY(EditDefaultsOnly, Category = "VFX")
-	UNiagaraSystem* FireSystem;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "00_Settings")
-	EInteractionType InteractionType = EInteractionType::Bonfire;
 
 public:
 	// =============================================================
@@ -72,6 +58,7 @@ public:
 	UFUNCTION()
 	void HandleWidgetClosed();
 private:
+	/// 코드 추가 : 12/24 (두번 열릴 수 있으므로, 방어코드 추가)
 	bool bIsOpened = false;
 #pragma endregion
 

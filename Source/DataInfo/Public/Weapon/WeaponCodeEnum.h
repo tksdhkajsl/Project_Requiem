@@ -37,24 +37,24 @@ struct FWeaponMasteryData
 
 public:
 	// 현재 랭크
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	EWeaponRank CurrentRank = EWeaponRank::F;
 
 	// 현재 잡은 몹 갯수
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 CurrentKillCount = 0;
 
 	// 다음 랭크업을 위해 잡아야 하는 몹 갯수 (Max)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 MaxKillCount = 3; // F -> E 가는데 3마리라고 가정
 
-	// 현재 랭크의 크리티컬 확률 배율 (예: 0.0, 0.1 ...)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float CritRate = 0.0f;
+	// 현재 랭크의 크리티컬 확률 배율 (예: 1.0, 1.1 ...)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float CritRate = 1.0f;
 
-	// 현재 랭크의 크리티컬 데미지 배율 (예: 1.0, 1.2 ...)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float CritDamage = 1.0f;
+	// 현재 랭크의 크리티컬 데미지 배율 (예: 0.0, 0.2 ...)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float CritDamage = 0.0f;
 };
 
 USTRUCT(BlueprintType)

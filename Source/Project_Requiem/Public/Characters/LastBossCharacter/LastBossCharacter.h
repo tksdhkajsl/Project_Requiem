@@ -4,18 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "Characters/BaseCharacter.h"
+#include "Interface/Boss/BossControlInterface.h"
 #include "LastBossCharacter.generated.h"
 
 // 플레이어에게 보낼 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyDamage, float, DamageAmount);	// 데미지
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnApplyDamage, float, CurrentHP, float, MaxHP);	// 데미지
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnApplyExp, float, ExpAmount);			// 경험치
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLastBossName, FText, BossName);		// 이름
 
-/**
- * 
- */
+#pragma region 보스방 도어
+class ABossDoor;
+#pragma endregion
+
 UCLASS()
-class PROJECT_REQUIEM_API ALastBossCharacter : public ABaseCharacter
+class PROJECT_REQUIEM_API ALastBossCharacter : public ABaseCharacter, public IBossControlInterface
 {
 	GENERATED_BODY()
 
@@ -25,6 +27,12 @@ public:
 	virtual void BeginPlay() override;
 
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
+	FOnBossStatUpdated OnBossStatUpdated;
+
+	virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }
+
+
 	// 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Delegate")
 	FOnApplyDamage OnApplyDamage;
@@ -119,4 +127,16 @@ protected:
 private:
 
 	float MinHp = 0.0f;
+
+#pragma region 보스방 도어
+public:
+	FVector InitialLocation;
+
+	virtual void ActivateBossBattle() override;
+	virtual void ResetBossToDefault() override;
+
+	UPROPERTY(EditAnywhere)
+	ABossDoor* ConnectedDoor;
+#pragma endregion
+
 };

@@ -3,9 +3,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainMenu/PRSplinePathActor.h"
 
-APRMenuPawn::APRMenuPawn()
+APRMenuPawn::APRMenuPawn() 
+    : DummyRoot(nullptr), TargetSplineComp(nullptr), TargetSplineActor(nullptr), ElapsedTime(0.0f)
 {
-	PrimaryActorTick.bCanEverTick = true;
+
+    PrimaryActorTick.bStartWithTickEnabled = false;
 
     DummyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DummyRoot"));
     RootComponent = DummyRoot;
@@ -16,12 +18,18 @@ APRMenuPawn::APRMenuPawn()
     ElapsedTime = 0.0f;
 }
 
+void APRMenuPawn::StartCinematic()
+{
+    ElapsedTime = 0.0f;
+    bIsMoving = true;
+    SetActorTickEnabled(true);
+}
+
 void APRMenuPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
-    if (!TargetSplineActor)
-    {
+    if (!TargetSplineActor) {
         TArray<AActor*> FoundSplines;
         UGameplayStatics::GetAllActorsOfClass(GetWorld(), APRSplinePathActor::StaticClass(), FoundSplines);
         if (FoundSplines.Num() > 0)
@@ -30,8 +38,7 @@ void APRMenuPawn::BeginPlay()
         }
     }
 
-    if (TargetSplineActor)
-    {
+    if (TargetSplineActor) {
         TargetSplineComp = TargetSplineActor->FindComponentByClass<USplineComponent>();
         if (TargetSplineComp)
         {
@@ -40,23 +47,6 @@ void APRMenuPawn::BeginPlay()
             SetActorLocation(StartPoint);
         }
     }
-
-    //if (TargetSplineActor)
-    //{
-    //    TargetSplineComp = TargetSplineActor->FindComponentByClass<USplineComponent>(); // ⭐ 이제 안전하게 외부 컴포넌트를 참조
-
-    //    if (TargetSplineComp)
-    //    {
-    //        UE_LOG(LogTemp, Warning, TEXT("Spline Component Found! Starting cinematic move."));
-
-    //        FVector StartPoint = TargetSplineComp->GetLocationAtTime(0.0f, ESplineCoordinateSpace::World);
-    //        SetActorLocation(StartPoint);
-    //    }
-    //    else
-    //    {
-    //        UE_LOG(LogTemp, Error, TEXT("TargetSplineActor does not have a USplineComponent attached."));
-    //    }
-    //}
 }
 
 void APRMenuPawn::Tick(float DeltaTime)
@@ -75,6 +65,7 @@ void APRMenuPawn::Tick(float DeltaTime)
 
     if (Alpha >= 1.0f) {
         bIsMoving = false;
+        SetActorTickEnabled(false);
         OnCinematicFinished.Broadcast();
     }
 }

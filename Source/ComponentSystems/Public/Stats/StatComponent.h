@@ -44,7 +44,8 @@ class COMPONENTSYSTEMS_API UStatComponent : public UActorComponent
  * UpgradeStrength(),UpgradeDexterity() => 업글 배수 설정하기
  * AllocatedLevelUpStat() 중 	RequiredExp *= 1.1; 배수 설정하기
 */
-
+	
+#pragma region 변경 요망
 public:
 	// [추가] 스태미너 회복 일시정지 설정 함수
 	UFUNCTION(BlueprintCallable, Category = "Stats")
@@ -53,8 +54,7 @@ public:
 protected:
 	// [추가] 스태미너 회복 정지 여부 플래그
 	bool bIsStaminaRegenPaused = false;
-	
-#pragma region 변경 요망
+
 public:
 	/** 타이머 틱 부분 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "00_Setting")

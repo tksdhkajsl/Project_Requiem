@@ -23,7 +23,6 @@ public :
     FOnRequestLevelUpStat OnRequestLevelUpStat;
 #pragma endregion
 
-	
 #pragma region 언리얼 기본 생성
 protected:
 	virtual void NativeConstruct() override;
@@ -36,6 +35,8 @@ public:
     void UpdateLevelUpStat(ELevelUpStats StatType, int32 AllocatedPoints);
     void HiddenButton();
 
+    // 화톳불에서 버튼을 보이게 하는 함수
+    void ShowButton();
 protected:
     UFUNCTION()
     void OnClick_StrIncrease();
@@ -63,6 +64,11 @@ public:
 
 protected:
     UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UButton> StrIncreaseButton;
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UButton> DexIncreaseButton;
+
+    UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> StrValueText;
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> HealthValueText;
@@ -89,15 +95,4 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> MagicDefenseText;
 #pragma endregion
-
-#pragma region 기본 스탯 버튼
-protected:
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UButton> StrIncreaseButton;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UButton> DexIncreaseButton;
-#pragma endregion
-
-
 };

@@ -1,7 +1,7 @@
 #include "Core/PRGameModeBase.h"
 #include "Core/PRPlayerController.h"
 // ========================================================
-// ¾ğ¸®¾ó ±âº»»ı¼º
+// ì–¸ë¦¬ì–¼ ê¸°ë³¸ìƒì„±
 // ========================================================
 APRGameModeBase::APRGameModeBase()
 {

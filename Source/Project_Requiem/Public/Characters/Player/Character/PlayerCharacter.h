@@ -162,6 +162,8 @@ public:
 	// 노티파이가 공격을 가능하게 만들라는 신호가 왔을 때 실행될 함수
 	void OnAttackEnable(bool bEnable);
 
+	UFUNCTION()
+	UWeaponMasteryComponent* GetWeaponMasteryComponent() { return WeaponMastery; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
@@ -174,6 +176,10 @@ protected:
 	TObjectPtr<class UWeaponMasteryComponent> WeaponMastery = nullptr;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class ULockOnComponent> LockOnComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UNiagaraComponent> PotionEffectComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+	TObjectPtr<class UDataTable> SoundDataTable;
 
 	// 구르기 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation|Montage")
@@ -203,6 +209,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|State")
 	bool bIsInvincible = false;
 
+	// 데이터 테이블에서 사운드를 가져오는 헬퍼 함수
+	USoundBase* GetSoundFromDataTable(FName RowName) const;
+
 private:
 	UPROPERTY()
 	TWeakObjectPtr<UAnimInstance> AnimInstance = nullptr;
@@ -212,9 +221,14 @@ private:
 	void OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 protected:
-	// [추가] 크리티컬 발생 시 사용할 카메라 셰이크 클래스 (블루프린트에서 할당)
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	// 크리티컬 발생 시 사용할 카메라 셰이크 클래스 (블루프린트에서 할당)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	TSubclassOf<UCameraShakeBase> CriticalCameraShakeClass;
+
+	// 리스폰 타이머 핸들
+	FTimerHandle RespawnTimerHandle;
+
+	bool bCanPlayEquipSound = false;
 
 public:
 	/*
@@ -294,6 +308,7 @@ public:
 	 * 추가 내용 : 포션(키보드 4번)
 	 */
 	int32 HPPotion = 3;
+	int32 MaxHPPotion = 9;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float RestoreHP = 30.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

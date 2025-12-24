@@ -60,6 +60,11 @@ void UPRStatRenderWidget::HiddenButton()
     if (StrValueText) StrIncreaseButton->SetVisibility(ESlateVisibility::Hidden);
     if (DexValueText) DexIncreaseButton->SetVisibility(ESlateVisibility::Hidden);
 }
+void UPRStatRenderWidget::ShowButton()
+{
+    if (StrIncreaseButton) StrIncreaseButton->SetVisibility(ESlateVisibility::Visible);
+    if (DexIncreaseButton) DexIncreaseButton->SetVisibility(ESlateVisibility::Visible);
+}
 void UPRStatRenderWidget::OnClick_StrIncrease()
 {
     OnRequestLevelUpStat.Broadcast(ELevelUpStats::Strength);

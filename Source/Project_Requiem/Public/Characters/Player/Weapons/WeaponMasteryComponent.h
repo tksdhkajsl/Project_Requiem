@@ -38,7 +38,7 @@ private:
 
 protected:
 	// 변수: 각 무기별 숙련도 데이터 저장
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mastery")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mastery")
 	FWeaponMasteryData OneHandedMastery; // 한손
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mastery")

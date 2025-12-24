@@ -30,7 +30,6 @@ void UPRHUDWidget::NativeConstruct()
         }
     }
 
-    // StatBar�� �ʱ� ���� �� ���� ���� (���ķ� ���� ����)
     if (BarHP) {
         BarHP->SetBarColor(FLinearColor::Red);
         BarHP->SetStatName(FText::FromString(TEXT("HP")));
@@ -84,7 +83,6 @@ void UPRHUDWidget::HandleRegenStatChanged(EFullStats StatType, float CurrValue, 
         break;
 
     default:
-        // ��Ÿ ó�� (�ʿ��)
         break;
     }
 }
@@ -119,7 +117,6 @@ void UPRHUDWidget::HandleBossStatChanged(EFullStats StatType, float CurrValue, f
         // HP만 갱신함
         break;
     }
-
 }
 void UPRHUDWidget::UpdateBossHPBar(float CurrentValue, float MaxValue)
 {
@@ -157,7 +154,7 @@ void UPRHUDWidget::UpdatePotionNum(int32 ItemNum)
     }
 }
 // ========================================================
-// 포션용 위젯
+// 인터렉션
 // ========================================================
 void UPRHUDWidget::UpdateActionText(const FText& Text)
 {

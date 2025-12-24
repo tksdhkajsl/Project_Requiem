@@ -72,6 +72,9 @@ void UBonfireWidget::OnBuyPotionClicked()
 {
     if (!PlayerRef && !CachedStatComponent) return;
 
+    // [추가] 12월 24일, 최대 포션 개수 제한 설정함
+    if (PlayerRef->HPPotion >= PlayerRef->MaxHPPotion) return;
+
     if (CachedStatComponent->GetCurrentExp() >= PotionPrice) {
         PlayerRef->AddPotion();
         CachedStatComponent->AddCurrentExp(-PotionPrice);
@@ -106,7 +109,8 @@ void UBonfireWidget::InitializeStatValues()
     FString ExpString = FString::Printf(TEXT("%.0f"), CurrentExp); // 소수점 없이 정수로 표시
     SoulValueText->SetText(FText::FromString(ExpString));
 
-    StatRenderList->HiddenButton();
+    // 화톳불에서는 스탯을 찍어야 하니까 버튼이 보여야 함
+    StatRenderList->ShowButton();
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Strength, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Strength));
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Dexterity, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Dexterity));
 
@@ -120,6 +124,8 @@ void UBonfireWidget::InitializeStatValues()
 
     float PhyAtt = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
     StatRenderList->UpdateSingleStat(EFullStats::PhysicalAttack, PhyAtt);
+    float AttSpeed = CachedStatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+    StatRenderList->UpdateSingleStat(EFullStats::AttackSpeed, AttSpeed);
     float MagAtt = CachedStatComponent->GetStatCurrent(EFullStats::MagicAttack);
     StatRenderList->UpdateSingleStat(EFullStats::MagicAttack, MagAtt);
     float PhyDef = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalDefense);
@@ -144,5 +150,14 @@ void UBonfireWidget::HandleRequestLevelUpStat(ELevelUpStats StatType)
 {
     if (!CachedStatComponent) return;
 
-    CachedStatComponent->AllocatedLevelUpStat(StatType);
+    if (CachedStatComponent->AllocatedLevelUpStat(StatType))
+    {
+        // 성공 시 로그 (현재 EXP는 컴포넌트가 알아서 갱신함)
+        UE_LOG(LogTemp, Log, TEXT("Level Up Success! Remaining Exp: %.0f"), CachedStatComponent->GetCurrentExp());
+    }
+    else
+    {
+        // 실패 시 로그
+        UE_LOG(LogTemp, Warning, TEXT("Not Enough Souls!"));
+    }
 }

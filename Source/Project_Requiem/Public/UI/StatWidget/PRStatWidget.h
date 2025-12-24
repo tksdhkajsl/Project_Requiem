@@ -7,11 +7,10 @@
 class UPRPlayerPortraitWidget;
 class UPRStatRenderWidget;
 class UStatComponent;
+class UWeaponMasteryComponent;
 class UTextBlock;
 enum class ELevelUpStats : uint8;
 enum class EFullStats : uint8;
-enum class EWeaponCode : uint8;
-enum class EWeaponRank : uint8;
 
 UCLASS()
 class PROJECT_REQUIEM_API UPRStatWidget : public UUserWidget
@@ -25,18 +24,6 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> SoulValueText;
-    // =============================================================
-    // 무기 랭크 텍스트 바인딩 (이름을 꼭 기억하세요!)
-    // =============================================================
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> Text_OneHandedRank;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> Text_TwoHandedRank;
-
-    UPROPERTY(meta = (BindWidget))
-    TObjectPtr<UTextBlock> Text_DualBladeRank;
-    // =============================================================
 #pragma endregion
 
 #pragma region 스탯 렌더 위젯
@@ -54,16 +41,6 @@ protected:
      */
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UPRStatRenderWidget> StatRenderList;
-#pragma endregion
-
-#pragma region 무기 랭크 업데이트
-public:
-    // 외부에서 랭크가 바뀌면 호출할 함수
-    void UpdateWeaponRank(EWeaponCode WeaponCode, EWeaponRank NewRank);
-
-private:
-    // 랭크 Enum을 FText("F", "S" 등)로 변환하는 헬퍼 함수
-    FText GetRankText(EWeaponRank Rank);
 #pragma endregion
 
 #pragma region 스탯컴포넌트 캐싱용
@@ -86,9 +63,30 @@ public:
     UFUNCTION()
     void HandleRequestLevelUpStat(ELevelUpStats StatType);
 
-    FORCEINLINE UStatComponent* GetCachedStatComponent() const { return CachedStatComponent; }
 private:
     UPROPERTY()
     TObjectPtr<UStatComponent> CachedStatComponent;
 #pragma endregion
+
+#pragma region 웨폰마스터리
+public:
+    UFUNCTION(BlueprintCallable, Category = "WeaponMastery")
+    void SetWeaponMasteryComponent(UWeaponMasteryComponent* Component);
+
+    FORCEINLINE UStatComponent* GetCachedStatComponent() const { return CachedStatComponent; }
+private:
+    UPROPERTY()
+    TObjectPtr<UWeaponMasteryComponent> CachedWeaponMastery;
+
+    
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextOnehand;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextTwohand;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextDual;
+#pragma endregion
+
 };

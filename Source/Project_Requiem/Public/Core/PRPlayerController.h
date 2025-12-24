@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Interface/Boss/BossControlInterface.h"
 #include "PRPlayerController.generated.h"
 
 class UPRHUDWidget;
@@ -13,7 +14,6 @@ UCLASS()
 class PROJECT_REQUIEM_API APRPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
 	
 #pragma region 언리얼 기본 생성
 public:
@@ -49,12 +49,12 @@ public:
 #pragma region 보스 관련 HUD 갱신
 public:
 	UFUNCTION()
-	void OnEnterBossRoom(ABaseCharacter* Boss);
+	void OnEnterBossRoom(ACharacter* Boss);
 	UFUNCTION()
-	void HandleBossHPChanged(EFullStats StatType, float Curr, float Max);
+	void HandleBossStatUpdate(float Cur, float Max, FText Name);
 
 	UPROPERTY(VisibleAnywhere, Transient, Category = "Boss Data")
-	ABaseCharacter* ActiveBoss = nullptr;
+	ACharacter* ActiveBoss = nullptr;
 #pragma endregion
 
 #pragma region 스탯 위젯 클래스

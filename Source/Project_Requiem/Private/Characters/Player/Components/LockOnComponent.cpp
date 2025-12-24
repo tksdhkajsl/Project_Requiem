@@ -137,7 +137,8 @@ void ULockOnComponent::UpdateTargetLock(float DeltaTime)
 		EndLockOn();
 		return;
 	}
-
+	
+	/// 코드 변경 필요 : 12/23(보스 1,2는 StatComponent 사용하지 않음)
 	ABaseCharacter* Enemy = Cast<ABaseCharacter>(CurrentTarget);
 	// 타겟 유효성 검사 (적이 죽었으면 락온 해제)
 	if (Enemy && Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)

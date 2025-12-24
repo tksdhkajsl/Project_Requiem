@@ -19,12 +19,15 @@ public:
 public:
     APRMenuPawn();
 
+    UFUNCTION()
+    void StartCinematic();
+
     UPROPERTY(VisibleAnywhere, Category = "Cinematic")
-    USceneComponent* DummyRoot;
+    USceneComponent* DummyRoot = nullptr;
     UPROPERTY(EditAnywhere, Category = "Cinematic Path")
-    USplineComponent* TargetSplineComp;
+    USplineComponent* TargetSplineComp = nullptr;
     UPROPERTY(EditAnywhere, Category = "Cinematic Path")
-    class AActor* TargetSplineActor;
+    class AActor* TargetSplineActor = nullptr;
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;

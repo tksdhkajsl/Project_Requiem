@@ -1,26 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Characters/Player/Weapons/WeaponMasteryComponent.h"
 #include "Characters/Player/Character/PlayerCharacter.h" 
 #include "Characters/Player/Weapons/WeaponActor.h"
 
-#include "Core/PRPlayerController.h"
-#include "UI/HUD/PRHUDWidget.h"
-#include "UI/StatWidget/PRStatWidget.h"
-
-// Sets default values for this component's properties
 UWeaponMasteryComponent::UWeaponMasteryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
-
-	// ...
 }
-
-
-// Called when the game starts
 void UWeaponMasteryComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -29,48 +14,45 @@ void UWeaponMasteryComponent::BeginPlay()
 	UpdateStatsByRank(OneHandedMastery);
 	UpdateStatsByRank(TwoHandedMastery);
 	UpdateStatsByRank(DualBladeMastery);
-	
 }
-
 void UWeaponMasteryComponent::AddKillCount(EWeaponCode WeaponType)
 {
-	switch (WeaponType)
-	{
+	switch (WeaponType) {
 	case EWeaponCode::OneHandedSword:
 	{
 		OneHandedMastery.CurrentKillCount++;
-		CheckRankUp(OneHandedMastery, EWeaponCode::OneHandedSword);
+		CheckRankUp(OneHandedMastery, WeaponType);
+
+		/// 코드 변경 : 12/23 (EWeaponCode::OneHandedSword 왜???)
+		//CheckRankUp(OneHandedMastery, EWeaponCode::OneHandedSword);
 	}
 		break;
 	case EWeaponCode::TwoHandedSword:
 	{
 		TwoHandedMastery.CurrentKillCount++;
-		CheckRankUp(TwoHandedMastery, EWeaponCode::TwoHandedSword);
+		CheckRankUp(TwoHandedMastery, WeaponType);
 	}
 		break;
 	case EWeaponCode::DualBlade: // 쌍검
 	{
 		DualBladeMastery.CurrentKillCount++;
-		CheckRankUp(DualBladeMastery, EWeaponCode::DualBlade);
+		CheckRankUp(DualBladeMastery, WeaponType);
 	}
 		break;
 	default:
 		break;
 	}
 }
-
 //데이터 가져오기 함수
 FWeaponMasteryData UWeaponMasteryComponent::GetMasteryData(EWeaponCode WeaponType) const
 {
-	switch (WeaponType)
-	{
+	switch (WeaponType) {
 	case EWeaponCode::OneHandedSword: return OneHandedMastery;
 	case EWeaponCode::TwoHandedSword: return TwoHandedMastery;
 	case EWeaponCode::DualBlade:      return DualBladeMastery;
 	}
 	return FWeaponMasteryData(); // 기본값 반환
 }
-
 void UWeaponMasteryComponent::CheckRankUp(FWeaponMasteryData& MasteryData, EWeaponCode WeaponType)
 {
 	// S랭크면 더 이상 성장 안 함
@@ -83,7 +65,7 @@ void UWeaponMasteryComponent::CheckRankUp(FWeaponMasteryData& MasteryData, EWeap
 		uint8 NextRankByte = (uint8)MasteryData.CurrentRank + 1;
 		MasteryData.CurrentRank = (EWeaponRank)NextRankByte;
 
-		// 킬 카운트 초기화 (누적식이면 이 줄 삭제)
+		// 킬 카운트 초기화
 		MasteryData.CurrentKillCount = 0;
 
 		// 바뀐 랭크에 맞춰 스탯(크확, 크뎀, 다음 목표) 갱신
@@ -91,7 +73,6 @@ void UWeaponMasteryComponent::CheckRankUp(FWeaponMasteryData& MasteryData, EWeap
 
 		UE_LOG(LogTemp, Log, TEXT("Weapon Rank Up! New Rank: %d"), (int32)MasteryData.CurrentRank);
 
-		// 1. 이 컴포넌트의 주인(플레이어)을 찾습니다.
 		APlayerCharacter* Player = Cast<APlayerCharacter>(GetOwner());
 
 		if (Player)

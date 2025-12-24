@@ -46,10 +46,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
             // [양손검]만 전용 블렌드 스페이스 사용
             if (TwoHandedLocomotionBS)
             {
-                if (CurrentLocomotionBS != TwoHandedLocomotionBS)
-                {
-                    CurrentLocomotionBS = TwoHandedLocomotionBS;
-                }
+                CurrentLocomotionBS = TwoHandedLocomotionBS;
             }
             break;
 
@@ -59,10 +56,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
             // [한손검]과 [쌍검], 그리고 [나머지]는 모두 공용(Normal) 사용!
             if (NormalLocomotionBS)
             {
-                if (CurrentLocomotionBS != NormalLocomotionBS)
-                {
-                    CurrentLocomotionBS = NormalLocomotionBS;
-                }
+                CurrentLocomotionBS = NormalLocomotionBS;
             }
             break;
         }

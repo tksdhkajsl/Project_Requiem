@@ -2,14 +2,12 @@
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Characters/Enemy/EnemySpawner.h"             //적 스포너
+#include "Characters/Enemy/EnemySpawner.h"
 #include "Characters/Player/Character/PlayerCharacter.h"
-#include "Stats/StatComponent.h"            // 스탯 컴포넌트
-#include "Stats/Data/EFullStats.h"          // 스탯 Enum
+#include "Stats/StatComponent.h"          
+#include "Stats/Data/EFullStats.h"        
 
-#include "NiagaraComponent.h"
-#include "NiagaraSystem.h"
-#include "UI/Bonfire/BonfireWidget.h"
+#include "UI/Bonfire/BonfireWidget.h" /// 코드 변경 : 12/24 (#include "Blueprint/UserWidget.h")
 
 // ========================================================
 // 언리얼 생성
@@ -22,11 +20,6 @@ ABonfire::ABonfire()
 
 	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
 	InteractionBox->SetupAttachment(RootComponent);
-
-	FireEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("FireEffect"));
-	FireEffect->SetupAttachment(RootComponent);
-	FireEffect->SetAutoActivate(false);
-
 	InteractionBox->SetBoxExtent(FVector(60.f, 60.f, 100.f));
 	InteractionBox->SetRelativeLocation(FVector(0.f, 0.f, 80.f));
 
@@ -40,7 +33,6 @@ void ABonfire::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (FireSystem && FireEffect) FireEffect->SetAsset(FireSystem);
 }
 // ========================================================
 // HUD 위젯 클래스
@@ -52,44 +44,40 @@ bool ABonfire::CanInteract_Implementation(const APlayerCharacter* Caller) const
 
 FText ABonfire::GetInteractionText_Implementation(const APlayerCharacter* Caller) const
 {
-	switch (InteractionType) {
-	case EInteractionType::Bonfire:
-		return FText::FromString(TEXT("본파이어"));
-	case EInteractionType::Merchant:
-		return FText::FromString(TEXT("상인"));
-	default:
-		return FText::GetEmpty();
-	}
+	return FText::FromString(TEXT("휴식하기"));
 }
 
 void ABonfire::Interact_Implementation(APlayerCharacter* Caller)
 {
-	/*
-	 *  25/12/17 코드 추가 : 천수호
-	 *  추가 사유 : 나이아가라 이펙트 추가
-	 */
+	/// 코드 추가 : 12/24 (해당 UI 두번 열리지 않게 방어코드)
 	if (!Caller || bIsOpened) return;
 	bIsOpened = !bIsOpened;
-	if (FireEffect) FireEffect->Activate(true);
 
 	// 1. 플레이어 회복
 	HealPlayer(Caller);
 
-	// 2. 적 리스폰 (월드의 모든 스포너 찾기)
+	// 2. 플레이어 리스폰 지점 갱신
+	// 화톳불 위치 + 약간 앞쪽으로 설정 (화톳불 모델에 끼임 방지)
+	FVector NewSpawnLoc = GetActorLocation() + (GetActorForwardVector() * 100.0f);
+	NewSpawnLoc.Z = 2.0f; // 바닥에 파묻히지 않게 살짝 띄움
+
+	Caller->SetSpawnLocation(NewSpawnLoc);
+
+	// 3. 적 리스폰 (월드의 모든 스포너 찾기)
 	RespawnAllEnemies();
 
-	// 3. 스탯 올리고,물약 살 수 있는 widget 띄우기 
+	// 4. 스탯 올리고,물약 살 수 있는 widget 띄우기 
 	if (BonfireWidgetClass) {
-		if (APlayerController* PC = GetWorld()->GetFirstPlayerController()) {
+		if (APlayerController* PC = Cast<APlayerController>(Caller->GetController())) {
 			BonfireWidget = CreateWidget<UBonfireWidget>(PC, BonfireWidgetClass);
 			BonfireWidget->SetStatComponent(Caller->GetStatComponent());
 			if (BonfireWidget) {
 				BonfireWidget->AddToViewport();
 
+				PC->SetShowMouseCursor(true);
 				FInputModeUIOnly InputMode;
-				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetWidgetToFocus(BonfireWidget->TakeWidget());
 				PC->SetInputMode(InputMode);
-				PC->bShowMouseCursor = true;
 
 				BonfireWidget->OnBonfireClosed.AddDynamic(this, &ABonfire::HandleWidgetClosed);
 			}
@@ -99,8 +87,10 @@ void ABonfire::Interact_Implementation(APlayerCharacter* Caller)
 void ABonfire::HandleWidgetClosed()
 {
 	bIsOpened = false;
-	if (FireEffect)  FireEffect->Deactivate();
 }
+// ========================================================
+// 내부 로직
+// ========================================================
 void ABonfire::RespawnAllEnemies()
 {
 	TArray<AActor*> FoundSpawners;

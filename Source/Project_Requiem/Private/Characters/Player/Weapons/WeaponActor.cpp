@@ -63,6 +63,16 @@ void AWeaponActor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 게임 시작 시 콜리전 강제 비활성화 (맨 처음에 무기가 그냥 닿아도 데미지가 들어가는 버그가 있음)
+	if (WeaponCollision)
+	{
+		WeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (LeftWeaponCollision)
+	{
+		LeftWeaponCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
 	AdjustMeshToSocket(WeaponMesh);
 	AdjustMeshToSocket(LeftWeaponMesh);
 

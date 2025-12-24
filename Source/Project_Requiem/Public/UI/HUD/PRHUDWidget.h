@@ -47,7 +47,6 @@ public:
     TObjectPtr<UPRHUDStatBarWidget> BarST;
 #pragma endregion
 
-    /// Todo : 보스 캐릭터 확정시 만들어야 함.
 #pragma region 보스 HP바 갱신
 public:
     UFUNCTION()
@@ -105,7 +104,7 @@ public:
     UTextBlock* ActionTextValue;
 #pragma endregion
 
-#pragma region MyRegion
+#pragma region 캐싱용
     UPROPERTY(BlueprintReadOnly)
     TObjectPtr<APlayerCharacter> Player;
 #pragma endregion

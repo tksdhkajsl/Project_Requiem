@@ -1,7 +1,7 @@
 #include "Core/PRPlayerController.h"
 #include "UI/HUD/PRHUDWidget.h"
 #include "UI/StatWidget/PRStatWidget.h"
-//
+
 #include "Characters/BaseCharacter.h"
 #include "Characters/Player/Character/PlayerCharacter.h"
 #include "Stats/StatComponent.h"
@@ -14,7 +14,6 @@ APRPlayerController::APRPlayerController()
 }
 void APRPlayerController::BeginPlay()
 {
-
 	if (HUDWidgetClass) {
 		PlayerHUD = CreateWidget<UPRHUDWidget>(this, HUDWidgetClass);
 		if (PlayerHUD) {
@@ -31,9 +30,6 @@ void APRPlayerController::BeginPlay()
 }
 void APRPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (ActiveBoss && ActiveBoss->GetStatComponent()) {
-		ActiveBoss->GetStatComponent()->OnRegenStatChanged.RemoveDynamic(this, &APRPlayerController::HandleBossHPChanged);
-	}
 	Super::EndPlay(EndPlayReason);
 }
 // ========================================================
@@ -62,37 +58,22 @@ void APRPlayerController::PushDownKeyboard4(int32 PotionNum)
 // ========================================================
 // 보스 관련 HUD 갱신
 // ========================================================
-void APRPlayerController::OnEnterBossRoom(ABaseCharacter* Boss)
+void APRPlayerController::OnEnterBossRoom(ACharacter* Boss)
 {
 	if (!PlayerHUD || !Boss) return;
 
-	// 보스 이름 설정
-	PlayerHUD->SetBossName(Boss->MonsterName);
+	if (IBossControlInterface* BossInt = Cast<IBossControlInterface>(Boss)) {
+		BossInt->GetBossStatDelegate().RemoveAll(this);
+		BossInt->GetBossStatDelegate().AddDynamic(this, &APRPlayerController::HandleBossStatUpdate);
 
-	// 초기 체력 갱신
-	if (UStatComponent* StatComp = Boss->GetStatComponent()) {
-		PlayerHUD->UpdateBossHPBar(StatComp->CurrHP, StatComp->MaxHP);
-
-		StatComp->OnRegenStatChanged.RemoveDynamic(this, &APRPlayerController::HandleBossHPChanged);
-		StatComp->OnRegenStatChanged.AddDynamic(this, &APRPlayerController::HandleBossHPChanged);
+		PlayerHUD->ShowBossHPBar(true);
 	}
-
-	PlayerHUD->ShowBossHPBar(true);
 }
-void APRPlayerController::HandleBossHPChanged(EFullStats StatType, float Curr, float Max)
+void APRPlayerController::HandleBossStatUpdate(float Cur, float Max, FText Name)
 {
-	if (!PlayerHUD) return;
-	if (StatType != EFullStats::Health) return;
-
-	PlayerHUD->UpdateBossHPBar(Curr, Max);
-
-	// 죽으면 숨기기
-	if (Curr <= 0.f) {
-		PlayerHUD->ShowBossHPBar(false);
-		if (ActiveBoss && ActiveBoss->GetStatComponent()) {
-			ActiveBoss->GetStatComponent()->OnRegenStatChanged.RemoveDynamic(this, &APRPlayerController::HandleBossHPChanged);
-		}
-		ActiveBoss = nullptr;
+	if (PlayerHUD) {
+		PlayerHUD->SetBossName(Name);
+		PlayerHUD->UpdateBossHPBar(Cur, Max);
 	}
 }
 // ========================================================
@@ -105,7 +86,7 @@ void APRPlayerController::HandleStatInput()
 		return;
 	}
 
-	if (bIsStatWidgetOpen) { // 스탯창 닫는 로직
+	if (bIsStatWidgetOpen) {
 		PlayerStatWidget->RemoveFromParent();
 		OnStatWindowClosed();
 		FInputModeGameOnly InputMode;
@@ -117,9 +98,10 @@ void APRPlayerController::HandleStatInput()
 		APawn* PlayerPawn = GetPawn();
 		UStatComponent* PlayerStatComp = PlayerPawn ? Cast<ABaseCharacter>(PlayerPawn)->GetStatComponent() : nullptr;
 
-		if (PlayerStatComp) {
-			PlayerStatWidget->SetStatComponent(PlayerStatComp);
-		}
+		if (PlayerStatComp) PlayerStatWidget->SetStatComponent(PlayerStatComp);
+
+		UWeaponMasteryComponent* WeaponMasteryComp = PlayerPawn ? Cast<APlayerCharacter>(PlayerPawn)->GetWeaponMasteryComponent() : nullptr;
+		PlayerStatWidget->SetWeaponMasteryComponent(WeaponMasteryComp);
 		OnStatWindowOpened();
 		PlayerStatWidget->AddToViewport();
 		FInputModeGameAndUI InputMode;

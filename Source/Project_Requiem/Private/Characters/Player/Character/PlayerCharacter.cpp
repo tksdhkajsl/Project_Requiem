@@ -7,6 +7,9 @@
 #include "Characters/Player/Weapons/WeaponManagerComponent.h"
 #include "Characters/Player/Weapons/WeaponMasteryComponent.h"
 #include "Characters/Player/Components/LockOnComponent.h"
+#include "NiagaraComponent.h"
+#include "Components/AudioComponent.h"
+#include "Characters/Player/Data/Sounds/SoundDataStruct.h"
 
 #pragma region Input
 #include "EnhancedInputSubsystems.h"
@@ -57,6 +60,12 @@ APlayerCharacter::APlayerCharacter()
 	InteractionTrigger->SetRelativeScale3D(FVector(10));
 	InteractionTrigger->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnInteractionTriggerOverlapBegin);
 	InteractionTrigger->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnInteractionTriggerOverlapEnd);
+
+
+	// 포션용 나이아가라 컴포넌트
+	PotionEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("PotionEffectComponent"));
+	PotionEffectComponent->SetupAttachment(RootComponent);
+	PotionEffectComponent->bAutoActivate = false; // 게임 시작하자마자 이펙트 나오면 안 되므로 꺼둠
 
 #pragma region 캡쳐 컴포넌트 관련
 	PortraitCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("PortraitCapture"));
@@ -176,6 +185,8 @@ void APlayerCharacter::BeginPlay()
 	* 변경 내용 : 현재 시작시 무기가 장착이 안되는 문제가 있어서 추가함(강제로 1 누른것과 같은 효과)
 	*/
 	EquipWeapon(1.f);
+
+	bCanPlayEquipSound = true;
 	IsDeath = false;
 
 #pragma region 캡쳐 컴포넌트 관련
@@ -379,7 +390,10 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	// 4. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
 	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
 
-	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
+	// 5. 무기 교체 사운드 추가
+	USoundBase* EquipWeaponSound = GetSoundFromDataTable(FName("EquipWeapon"));
+
+	// 6. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
 	switch (WeaponIndex)
 	{
 	case 1:
@@ -467,6 +481,12 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 
 				// 2. [추가] 초기화된 위치를 다시 "손잡이 기준"으로 재조정!
 				NewWeapon->AdjustMeshToSocket(LeftMesh);
+			}
+
+			// 무기 교체 사운드를 실행
+			if (bCanPlayEquipSound && EquipWeaponSound)
+			{
+				UGameplayStatics::PlaySound2D(this, EquipWeaponSound);
 			}
 
 			// F. 현재 무기 변수 갱신 ("이제 이게 내 무기다!")
@@ -594,7 +614,7 @@ void APlayerCharacter::PlayComboAttack()
 
 void APlayerCharacter::ProcessWeaponHit(AActor* TargetActor)
 {
-	// 유효성 검사
+	// 1. 유효성 검사
 	if (!TargetActor) return;
 	// 2. 공격력 가져오기 (StatComponent 활용)
 	float FinalDamage = 0.f;
@@ -614,10 +634,12 @@ void APlayerCharacter::ProcessWeaponHit(AActor* TargetActor)
 
 			if (CriticalCameraShakeClass)
 			{
-				// 진원지: 타격된 적의 위치, 반경: 500 정도면 적당
-				UGameplayStatics::PlayWorldCameraShake(GetWorld(), CriticalCameraShakeClass, TargetActor->GetActorLocation(), 0.f, 500.f);
+				if (APlayerController* PC = Cast<APlayerController>(GetController()))
+				{
+					PC->ClientStartCameraShake(CriticalCameraShakeClass);
+				}
 			}
-			// UE_LOG(LogTemp, Warning, TEXT("Critical Hit!"));
+			UE_LOG(LogTemp, Warning, TEXT("Critical Hit!"));
 		}
 	}
 	// 4. 최종 데미지 전달 (부모 클래스의 Attack 함수 이용)
@@ -656,6 +678,26 @@ void APlayerCharacter::OnAttackEnable(bool bEnable)
 }
 
 
+USoundBase* APlayerCharacter::GetSoundFromDataTable(FName RowName) const
+{
+	if (!SoundDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SoundDataTable is not set!"));
+		return nullptr;
+	}
+
+	// 테이블에서 RowName(예: "Potion", "Die")으로 데이터 찾기
+	static const FString ContextString(TEXT("Sound Lookup"));
+	FSoundData* Row = SoundDataTable->FindRow<FSoundData>(RowName, ContextString);
+
+	if (Row)
+	{
+		return Row->SoundAsset;
+	}
+
+	return nullptr;
+}
+
 void APlayerCharacter::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	// 락온 컴포넌트가 있고, 현재 락온 중이라면 -> 다시 "타겟 바라보기" 모드로 복구
@@ -688,6 +730,12 @@ void APlayerCharacter::Die()
 		GetCharacterMovement()->DisableMovement();
 		GetController()->SetIgnoreMoveInput(true);
 	}
+	// 플레이어의 짧은 비명 소리
+	USoundBase* DieSound = GetSoundFromDataTable(FName("Die"));
+	if (DieSound)
+	{
+		UGameplayStatics::PlaySound2D(this, DieSound);
+	}
 
 }
 void APlayerCharacter::ShowDeathUI()
@@ -700,12 +748,22 @@ void APlayerCharacter::ShowDeathUI()
 			YOUDIEWidget->AddToViewport(10);
 			YOUDIEWidget->PlayDeathAnimation();
 	}
-	
+	// 유다이 위젯이 나오면서 사운드가 들림
+	USoundBase* YouDieSound = GetSoundFromDataTable(FName("YouDie"));
+	if (YouDieSound)
+	{
+		UGameplayStatics::PlaySound2D(this, YouDieSound);
+	}
 	// 시간 느려짐
 	UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.5f);
+
+	GetWorld()->GetTimerManager().SetTimer(RespawnTimerHandle, this, &APlayerCharacter::RespawnPlayer, 2.0f, false);
 }
 void APlayerCharacter::AddPotion()
 {
+	// [추가] 12월 24일, 현재 포션 개수가 최대 포션 개수보다 많으면 그냥 리턴
+	if (HPPotion >= MaxHPPotion) return;
+
 	HPPotion++;
 	OnPotionChanged.Broadcast(HPPotion);
 }
@@ -716,6 +774,16 @@ void APlayerCharacter::EatPotion()
 		HPPotion--;
 		StatComponent->ChangeStatCurrent(EFullStats::Health, RestoreHP);
 		OnPotionChanged.Broadcast(HPPotion);
+		USoundBase* PotionSound = GetSoundFromDataTable(FName("Potion"));
+		if (PotionSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, PotionSound, GetActorLocation());
+		}
+		if (PotionEffectComponent)
+		{
+			// 이펙트를 껐다 켜서(Reset) 처음부터 재생되게 함
+			PotionEffectComponent->Activate(true);
+		}
 	}
 }
 void APlayerCharacter::AddPotions(int32 Potion)
