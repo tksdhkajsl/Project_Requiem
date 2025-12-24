@@ -20,6 +20,12 @@ void ALastBossCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 몽타주 추가
+	AddPatternMontage();
+
+	// 스폰 위치 저장
+	SpawnLocation = GetActorLocation();
+
 	// 보스 초기화
 	ResetLastBoss();
 
@@ -129,6 +135,9 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 	// 페이즈 증가
 	Phase++;
 
+	// 페이즈 바뀜
+	bPhaseChanged = true;
+
 	// 페이즈 변경 델리게이트 
 	OnLastBossChangedPhase.Broadcast();
 
@@ -158,9 +167,6 @@ void ALastBossCharacter::LastBossEndPhaseChage(UAnimMontage* Montage, bool bInte
 	{
 		GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
 	}
-
-	// 교체 중 재피격 방지
-	bLastBossInvincible = true;
 
 	// 유효성 검사
 	if (!GetMesh())
@@ -269,12 +275,8 @@ void ALastBossCharacter::ResetBossToDefault()
 	// AIController 종료 델리게이트
 	OnLastBossStop.Broadcast();
 
-	// 위치 초기화
-	SetActorLocation(SpawnLocation);
-	SetActorRotation(FRotator::ZeroRotator);
-
-	// 체력 회복
-	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
+	// 보스 초기화
+	ResetLastBoss();
 
 	// 몽타주 종료
 	GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
@@ -282,13 +284,14 @@ void ALastBossCharacter::ResetBossToDefault()
 
 void ALastBossCharacter::ResetLastBoss()
 {
-	// 몽타주 추가
-	AddPatternMontage();
+	// 위치 초기화
+	SetActorLocation(SpawnLocation);
+	SetActorRotation(FRotator::ZeroRotator);
 
-	// 스폰 위치 저장
-	SpawnLocation = GetActorLocation();
-
-	// 보스 스폰 시 무적 활성화
+	// 초기 세팅 보스 무적 활성화
 	bLastBossInvincible = true;
+
+	// 체력 회복
+	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
 }
 

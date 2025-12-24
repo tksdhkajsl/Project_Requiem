@@ -139,24 +139,31 @@ protected:
 	TObjectPtr<class UAnimMontage> PhaseTwoMontage5 = nullptr;
 
 protected:
+	// 페이즈1 몽타주
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
 	TArray<TObjectPtr<class UAnimMontage>> PhaseOnePatterns;
 
+	// 페이즈2 몽타주
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Montage|Patterns")
 	TArray<TObjectPtr<class UAnimMontage>> PhaseTwoPatterns;
 
+	// 보스의 드롭 EXP
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "00_Setting|Exp", meta = (ClampMin = "0"))
 	float DropExp = 0.0f;
 
+	// 보스 페이즈 상태
 	UPROPERTY(VisibleAnywhere, Category = "Information|Phase")
 	int32 Phase = 1;
 
+	// 페이즈 변경 확인용
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information|Phase")
 	bool bPhaseChanged = false;
 
+	// 보스 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Information|Name")
 	FText BossName;
 
+	// 보스 무적 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Information")
 	bool bLastBossInvincible = false;
 private:
