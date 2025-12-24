@@ -450,6 +450,29 @@ protected:
 	float PendingInvulnerableDuration = 0.0f;
 
 
+	// HitReact 진행 중인지
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bIsInHitReact = false;
+
+	// 히트리액션이 끝난 뒤 플레이어 쉬는 타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta = (ClampMin = "0.0"))
+	float HitReactRecoveryTime = 0.7f;
+
+	// 이 시간 전까지는 공격 금지
+	float AttackBlockedUntilTime = 0.0f;
+
+	//HitReact 중 보스가 추적도 멈출지
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
+	bool bStopChaseWhileHitReact = false;
+
+	bool IsAttackBlocked() const;
+
+	// 패턴 후딜 기본값
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Pattern", meta = (ClampMin = "0.0"))
+	float DefaultPatternRecoveryTime = 0.5f;
+
+	float PendingRecoveryTime = 0.0f;
+
 public:
 
 	// 패턴 종료 호출용(몽타주 끝/노티파이 끝에서 사용)

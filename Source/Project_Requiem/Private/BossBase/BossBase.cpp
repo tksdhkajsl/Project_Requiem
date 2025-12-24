@@ -180,16 +180,17 @@ void ABossBase::UpdateChase(float DeltaTime)
 		return;
 	}
 
-	if (bMovementLocked)
+	// HitReact 중이면 추적을 멈출지 계속할지 선택
+	if (bIsInHitReact)
 	{
-		return;
+		if (bStopChaseWhileHitReact)
+		{
+			return;
+		}
 	}
 
-	if (!TargetCharacter)
-	{
-		SetBossState(EBossState::Idle);
-		return;
-	}
+	// 공격 전환만 막기(추적은 가능)
+	const bool bBlockAttackTransition = IsAttackBlocked();
 
 	const FVector BossLocation = GetActorLocation();
 	const FVector TargetLocation = TargetCharacter->GetActorLocation();
@@ -199,17 +200,21 @@ void ABossBase::UpdateChase(float DeltaTime)
 
 	const float DistanceToTarget = ToTarget.Length();
 
-	if (DistanceToTarget <= MeleeZoneMaxRange)
+	if (!bBlockAttackTransition)
 	{
-		SetBossState(EBossState::Attack);
-		return;
+		if (DistanceToTarget <= MeleeZoneMaxRange)
+		{
+			SetBossState(EBossState::Attack);
+			return;
+		}
+
+		if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange)
+		{
+			SetBossState(EBossState::Attack);
+			return;
+		}
 	}
 
-	if (bUseRangedAttack && DistanceToTarget >= RangedZoneMinRange)
-	{
-		SetBossState(EBossState::Attack);
-		return;
-	}
 
 	if (DistanceToTarget <= StoppingDistance)
 	{
@@ -231,6 +236,18 @@ void ABossBase::UpdateAttack(float DeltaTime)
 	if (!TargetCharacter)
 	{
 		SetBossState(EBossState::Idle);
+		return;
+	}
+
+	// HitReact중이면 공격 로직 막기
+	if (bIsInHitReact)
+	{
+		return;
+	}
+
+	// HitReact/패턴 후딜(Recovery) 시간 동안 공격 금지
+	if (IsAttackBlocked())
+	{
 		return;
 	}
 
@@ -820,6 +837,8 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	PendingAoEDamage = Data->AoEDamage;
 	PendingInvulnerableDuration = Data->InvulnerableDuration;
 
+	PendingRecoveryTime = DefaultPatternRecoveryTime;
+
 	bIsExecutingPattern = true;
 	CurrentPattern = Pattern;
 
@@ -909,6 +928,11 @@ void ABossBase::TryPlayHitReact()
 
 	}
 
+	bIsInHitReact = true;
+
+	AttackBlockedUntilTime = FMath::Max(AttackBlockedUntilTime, Now + HitReactRecoveryTime);
+
+
 	LockMovement();
 
 	AnimInstance->Montage_Play(HitReactMontage);
@@ -922,12 +946,31 @@ void ABossBase::TryPlayHitReact()
 
 
 
+bool ABossBase::IsAttackBlocked() const
+{
+	if (!GetWorld()) return false;
+	const float Now = GetWorld()->GetTimeSeconds();
+	return Now < AttackBlockedUntilTime;
+}
+
 void ABossBase::FinishCurrentPattern()
 {
 	UnlockMovement();
 
 	bIsExecutingPattern = false;
 	CurrentPattern = EBossPattern::None;
+
+	if (GetWorld())
+	{
+		const float Now = GetWorld()->GetTimeSeconds();
+		const float Recovery = FMath::Max(0.0f, PendingRecoveryTime);
+		AttackBlockedUntilTime = FMath::Max(AttackBlockedUntilTime, Now + Recovery);
+	}
+
+	PendingAoERadius = 0.0f;
+	PendingAoEDamage = 0.0f;
+	PendingInvulnerableDuration = 0.0f;
+	PendingRecoveryTime = 0.0f;
 
 	if (CurrentState == EBossState::Attack)
 	{
@@ -940,6 +983,15 @@ void ABossBase::OnHitReactMontageEnded(UAnimMontage* Montage, bool Interrupted)
 	if (Montage != HitReactMontage) return;
 	if (CurrentState == EBossState::Dead) return;
 	if (CurrentState == EBossState::PhaseChange) return;
+
+	bIsInHitReact = false;
+
+	if (GetWorld())
+	{
+		const float Now = GetWorld()->GetTimeSeconds();
+		AttackBlockedUntilTime = FMath::Max(AttackBlockedUntilTime, Now + HitReactRecoveryTime);
+	}
+
 
 	UnlockMovement();
 
