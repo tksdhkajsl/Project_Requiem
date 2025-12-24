@@ -651,7 +651,7 @@ void APlayerCharacter::OnAttackEnable(bool bEnable)
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->AttackEnable(bEnable);
+		CurrentWeapon->AttackEnable(bEnable, CurrentCombo);
 	}
 }
 

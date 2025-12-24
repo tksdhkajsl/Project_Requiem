@@ -31,7 +31,7 @@ public:
 
 	// 공격 활성화/비활성화 (플레이어가 호출)
 	UFUNCTION(BlueprintCallable)
-	void AttackEnable(bool bEnable);
+	void AttackEnable(bool bEnable, int32 ComboCount = 1);
 
 	// 랭크에 맞춰 이펙트 교체 함수
 	void UpdateVFXByRank(EWeaponRank NewRank);
@@ -102,5 +102,10 @@ protected:
 
 private:
 	TWeakObjectPtr<APlayerCharacter> WeaponOwner = nullptr;
+
+protected:
+	// 무기 효과음 모음
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> SwingSounds;
 
 };

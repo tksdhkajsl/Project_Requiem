@@ -95,7 +95,7 @@ void AWeaponActor::OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent
 	}
 }
 
-void AWeaponActor::AttackEnable(bool bEnable)
+void AWeaponActor::AttackEnable(bool bEnable, int32 ComboCount)
 {
 	if (bEnable)
 	{
@@ -122,6 +122,22 @@ void AWeaponActor::AttackEnable(bool bEnable)
 		if (WeaponSlashEffectLeft)
 		{
 			WeaponSlashEffectLeft->Activate(true);
+		}
+
+		// 4. 공격 소리 재생
+		if (WeaponAudioComponent && SwingSounds.Num() > 0)
+		{
+			// ComboCount는 1부터 시작하므로, 배열 인덱스(0부터 시작)로 변환합니다.
+			// (ComboCount - 1)
+			// 만약 소리 개수보다 콤보가 길면 다시 처음 소리로 돌아가게(순환) 하려면 % 연산자 사용
+			int32 SoundIndex = (ComboCount - 1) % SwingSounds.Num();
+
+			// 인덱스 안전장치 (혹시라도 음수가 나오거나 범위 벗어남 방지)
+			if (SwingSounds.IsValidIndex(SoundIndex) && SwingSounds[SoundIndex])
+			{
+				WeaponAudioComponent->SetSound(SwingSounds[SoundIndex]);
+				WeaponAudioComponent->Play();
+			}
 		}
 	}
 	else
