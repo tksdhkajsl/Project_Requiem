@@ -48,9 +48,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 MaxKillCount = 3; // F -> E 가는데 3마리라고 가정
 
-	// 현재 랭크의 크리티컬 확률 배율 (예: 1.0, 1.1 ...)
+	// 현재 랭크의 크리티컬 확률 배율 (예: 0.0, 0.1 ...)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float CritRate = 1.0f;
+	float CritRate = 0.0f;
 
 	// 현재 랭크의 크리티컬 데미지 배율 (예: 0.0, 0.2 ...)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
