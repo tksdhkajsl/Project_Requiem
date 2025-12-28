@@ -1,0 +1,4 @@
+RowName,DisplayName,Description,ItemType,Icon,Mesh,MaxStackCount,BuyPrice,SellPrice,bIsUsable,bIsPlaceable,bIsEquipable
+IronSword,철검,기본적인 철검입니다.,Weapon,/Game/Icons/Icon_Sword.Icon_Sword,/Game/Meshes/SM_IronSword.SM_IronSword,1,100,50,false,false,true
+Bread,빵,먹으면 체력을 조금 회복합니다.,Food,/Game/Icons/Icon_Bread.Icon_Bread,None,5,10,5,true,false,false
+HealthPotion,체력 포션,체력을 즉시 회복하는 포션입니다.,Potion,/Game/Icons/Icon_Potion.Icon_Potion,None,10,30,15,true,false,false
