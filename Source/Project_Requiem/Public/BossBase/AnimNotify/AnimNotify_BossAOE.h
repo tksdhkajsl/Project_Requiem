@@ -7,13 +7,13 @@
 #include "AnimNotify_BossAOE.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class PROJECT_REQUIEM_API UAnimNotify_BossAOE : public UAnimNotify
 {
 	GENERATED_BODY()
-	
+
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

@@ -39,9 +39,9 @@ ABossProjectile::ABossProjectile()
 	ProjectileMovement->UpdatedComponent = Collision;
 	ProjectileMovement->InitialSpeed = 1200.0f;
 	ProjectileMovement->MaxSpeed = 1200.0f;
-	ProjectileMovement->bRotationFollowsVelocity = true; 
+	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
-	ProjectileMovement->ProjectileGravityScale = 0.0f;   
+	ProjectileMovement->ProjectileGravityScale = 0.0f;
 	ProjectileMovement->bForceSubStepping = true;
 	ProjectileMovement->MaxSimulationTimeStep = 0.016f;
 	ProjectileMovement->MaxSimulationIterations = 8;
@@ -56,7 +56,7 @@ ABossProjectile::ABossProjectile()
 
 	// 기본 크기
 	CapsuleCollision->InitCapsuleSize(25.0f, 180.0f);
-	
+
 	CapsuleCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CapsuleCollision->SetCollisionObjectType(ECC_WorldDynamic);
 
@@ -117,7 +117,7 @@ void ABossProjectile::Tick(float DeltaTime)
 
 void ABossProjectile::InitProjectile(float InDamage, AController* InInstigatorController)
 {
-	Damage = InDamage; 
+	Damage = InDamage;
 
 	if (InInstigatorController)
 	{
@@ -194,5 +194,5 @@ void ABossProjectile::HandleImpactAndDestroy(AActor* HitActor)
 		nullptr
 	);
 
-	
+
 }

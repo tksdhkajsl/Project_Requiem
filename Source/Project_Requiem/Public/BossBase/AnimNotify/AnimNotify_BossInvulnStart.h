@@ -7,13 +7,13 @@
 #include "AnimNotify_BossInvulnStart.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class PROJECT_REQUIEM_API UAnimNotify_BossInvulnStart : public UAnimNotify
 {
 	GENERATED_BODY()
-	
+
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

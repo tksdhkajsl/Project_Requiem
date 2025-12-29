@@ -7,7 +7,7 @@
 #include "AnimNotify_BossPhaseAOE.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class PROJECT_REQUIEM_API UAnimNotify_BossPhaseAOE : public UAnimNotify
@@ -16,5 +16,5 @@ class PROJECT_REQUIEM_API UAnimNotify_BossPhaseAOE : public UAnimNotify
 
 public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
-	
+
 };

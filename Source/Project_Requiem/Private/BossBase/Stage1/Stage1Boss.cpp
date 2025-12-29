@@ -1,10 +1,15 @@
 // Stage1Boss.cpp
 #include "BossBase/Stage1/Stage1Boss.h"
+#include "ComponentSystems/Public/Stats/StatComponent.h"
 #include "Internationalization/Text.h"
 
 AStage1Boss::AStage1Boss()
 {
-	MaxHP = 800.0f;
+	if (GetStatComponent())
+	{
+		GetStatComponent()->CurrHP = 800.0f;
+	}
+
 	EXP = 300.0f;
 
 	bUsePhaseSystem = true;
@@ -27,9 +32,6 @@ void AStage1Boss::BeginPlay()
 void AStage1Boss::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 {
 	Super::OnPhaseChanged_Implementation(NewPhase, OldPhase);
-
-	// 디버그 로그: 페이즈 전환 확인
-	UE_LOG(LogTemp, Warning, TEXT("Stage1Boss Phase Changed: %d -> %d"), OldPhase, NewPhase);
 
 	if (NewPhase == 2)
 	{
