@@ -92,49 +92,49 @@ void UWeaponMasteryComponent::UpdateStatsByRank(FWeaponMasteryData& MasteryData)
 {
 	switch (MasteryData.CurrentRank)
 	{
-	case EWeaponRank::F: // 1.0, 1.0, 목표 3마리
+	case EWeaponRank::F: //[수정] 12/29, 크리티컬 확률: 0%, 크리티컬 데미지 : 1.0배, 목표 3마리
 	{
 		MasteryData.CritRate = 0.0f;
 		MasteryData.CritDamage = 1.0f;
 		MasteryData.MaxKillCount = 3;
 	}
 		break;
-	case EWeaponRank::E: // 1.1, 1.2, 목표 5마리
+	case EWeaponRank::E: //[수정] 12/29, 크리티컬 확률: 10%, 크리티컬 데미지 : 1.2배, 목표 5마리
 	{
 		MasteryData.CritRate = 0.1f;
 		MasteryData.CritDamage = 1.2f;
 		MasteryData.MaxKillCount = 5;
 	}
 		break;
-	case EWeaponRank::D: // 1.2, 1.4, 목표 7마리
+	case EWeaponRank::D: //[수정] 12/29, 크리티컬 확률: 20%, 크리티컬 데미지 : 1.4배, 목표 7마리
 	{
 		MasteryData.CritRate = 0.2f;
 		MasteryData.CritDamage = 1.4f;
 		MasteryData.MaxKillCount = 7;
 	}
 		break;
-	case EWeaponRank::C: // 1.3, 1.5, 목표 9마리
+	case EWeaponRank::C: //[수정] 12/29, 크리티컬 확률: 30%, 크리티컬 데미지 : 1.5배, 목표 9마리
 	{
 		MasteryData.CritRate = 0.3f;
 		MasteryData.CritDamage = 1.5f;
 		MasteryData.MaxKillCount = 9;
 	}
 		break;
-	case EWeaponRank::B: // 1.4, 1.6, 목표 11마리
+	case EWeaponRank::B: //[수정] 12/29, 크리티컬 확률: 40%, 크리티컬 데미지 : 1.6배, 목표 11마리
 	{
 		MasteryData.CritRate = 0.4f;
 		MasteryData.CritDamage = 1.6f;
 		MasteryData.MaxKillCount = 11;
 	}
 		break;
-	case EWeaponRank::A: // 1.45, 1.8, 목표 13마리
+	case EWeaponRank::A: //[수정] 12/29, 크리티컬 확률: 45%, 크리티컬 데미지 : 1.8배, 목표 13마리
 	{
 		MasteryData.CritRate = 0.45f;
 		MasteryData.CritDamage = 1.8f;
 		MasteryData.MaxKillCount = 13;
 	}
 		break;
-	case EWeaponRank::S: // 1.5, 2.0, 끝
+	case EWeaponRank::S: //[수정] 12/29, 크리티컬 확률: 50%, 크리티컬 데미지 : 2.0배, 끝
 	{
 		MasteryData.CritRate = 0.5f;
 		MasteryData.CritDamage = 2.0f;

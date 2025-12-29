@@ -32,15 +32,20 @@ public:
 	UPROPERTY()
 	TObjectPtr<UPRHUDWidget> PlayerHUD;
 
-	/** 1번째 무기 바인딩 */
+	///** 1번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard1();
+	///** 2번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard2();
+	///** 3번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard3();
+
+	//[수정] 12/29 무기 바인딩 UI 업데이트 함수 (기존의 PushDownKeyboard를 통합함)
 	UFUNCTION()
-	void PushDownKeyboard1();
-	/** 2번째 무기 바인딩 */
-	UFUNCTION()
-	void PushDownKeyboard2();
-	/** 3번째 무기 바인딩 */
-	UFUNCTION()
-	void PushDownKeyboard3();
+	void UpdateHUDWeaponSlot(int32 SlotIndex);
+
 	/** 포션 용 키 바인딩 */
 	UFUNCTION()
 	void PushDownKeyboard4(int32 PotionNum);
