@@ -339,6 +339,10 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	}
 	// 4. 구르기 실행 로직
 	StatComponent->ChangeStatCurrent(EFullStats::Stamina, -ConsumeStamina);
+
+	// [추가] 12/29, 구르는 동안 스태미나 회복을 멈춘다.
+	StatComponent->SetStaminaRegenPaused(true);
+
 	// 입력 방향으로 회전 (이동 키를 누르고 있을 때만)
 	if (!GetLastMovementInputVector().IsNearlyZero())
 	{
@@ -353,6 +357,13 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	}
 	// 구르기 몽타주 재생
 	PlayAnimMontage(RollMontage);
+
+	// [추가] 12/29, 구르기 사운드 추가
+	USoundBase* RollSound = GetSoundFromDataTable(FName("Roll"));
+	if (RollSound)
+	{
+		UGameplayStatics::PlaySound2D(this, RollSound);
+	}
 
 	// 몽타주 종료 델리게이트 연결 (끝나면 원래대로 복구하기 위함)
 	FOnMontageEnded EndDelegate;
@@ -685,6 +696,9 @@ void APlayerCharacter::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupt
 		bUseControllerRotationYaw = true;
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 	}
+
+	// [추가] 12/29, 구르기가 끝나면 스태미나 회복을 다시 실행한다.
+	StatComponent->SetStaminaRegenPaused(false);
 }
 
 void APlayerCharacter::AddExp(float Amount)
