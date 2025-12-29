@@ -10,8 +10,8 @@ UCLASS()
 class PROJECT_REQUIEM_API APRMainMenuGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
-#pragma region 언리얼 기본생성
+
+	#pragma region 언리얼 기본생성
 public:
 	APRMainMenuGameModeBase();
 protected:

@@ -59,7 +59,7 @@ void AEnemyCharacter::BeginPlay()
 void AEnemyCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-    
+
     if (CurrentState == EEnemyState::Dead) return;
 
     // HP바 빌보드 처리
@@ -225,66 +225,97 @@ void AEnemyCharacter::UpdateAIState()
 
     if (!Player || !AIC) return;
 
-    // 공격 중이면 멈춤
+    // =========================================================
+    // 1. 공격 중(몽타주 재생 중)일 때는 AI 판단 중지
+    // =========================================================
+    // 이동도, 회전도 하지 않고 공격 애니메이션이 끝날 때까지 기다립니다.
+    // 따라서 공격 도중에는 방향이 고정됩니다.
     if (GetMesh()->GetAnimInstance()->IsAnyMontagePlaying())
     {
         AIC->StopMovement();
-        // ... (회전 로직) ...
         return;
     }
 
-    float Distance = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
+    // =========================================================
+    // 2. 거리 계산 및 다음 상태 결정
+    // =========================================================
+    float DistToPlayer = FVector::Dist(GetActorLocation(), Player->GetActorLocation());
+    float DistToHome = FVector::Dist(GetActorLocation(), HomeLocation); // 집까지의 거리
 
-    // 1. 새로운 상태 결정 (NewState)
     EEnemyState NewState = CurrentState;
 
-    if (Distance <= AttackRange)
-    {
-        NewState = EEnemyState::Attack;
-    }
-    else if (Distance <= DetectionRange)
-    {
-        NewState = EEnemyState::Chase;
-    }
-    else
+    // [복귀 로직 추가] 집에서 CanChaseRange 이상 멀어지면 무조건 집으로 복귀(Patrol)
+    if (DistToHome > CanChaseRange)
     {
         NewState = EEnemyState::Patrol;
     }
-
-    // =========================================================
-    // [핵심] 상태 변경 감지 및 하울링 재생
-    // =========================================================
-
-    // "이전에는 추격 상태가 아니었는데(Patrol 등), 방금 추격 상태(Chase)가 되었다면?"
-    if (CurrentState != EEnemyState::Chase && NewState == EEnemyState::Chase)
+    else
     {
-        // 공격하다가 추격으로 바뀐 게 아니라, '순찰' 중에 발견했을 때만 울게 하려면:
-        if (CurrentState == EEnemyState::Patrol)
+        // 기존 로직: 플레이어와의 거리에 따라 상태 결정
+        // 사거리(AttackRange)에 약간의 여유(50)를 둬서 판정
+        if (DistToPlayer <= (AttackRange + 50.0f))
         {
-            if (DetectSound)
-            {
-                UGameplayStatics::PlaySoundAtLocation(this, DetectSound, GetActorLocation());
-                // (선택 사항) 로그 출력
-                // UE_LOG(LogTemp, Warning, TEXT("Howling!")); 
-            }
+            NewState = EEnemyState::Attack;
+        }
+        else if (DistToPlayer <= DetectionRange)
+        {
+            NewState = EEnemyState::Chase;
+        }
+        else
+        {
+            NewState = EEnemyState::Patrol;
         }
     }
 
-    // 패트롤 타이머 취소 로직
+    // =========================================================
+    // 3. 상태 변경 이벤트 처리
+    // =========================================================
+
+    if (CurrentState == EEnemyState::Chase && NewState == EEnemyState::Patrol)
+    {
+        AIC->StopMovement(); // [필수] "쫓아가던 거 멈춰!" 명령
+        // 멈추면 GetMoveStatus()가 Idle이 되어 아래 Patrol 로직이 정상 작동함
+    }
+
+    // [하울링] 순찰(Patrol) -> 추격(Chase)으로 바뀔 때 소리 재생
+    if (CurrentState == EEnemyState::Patrol && NewState == EEnemyState::Chase)
+    {
+        if (DetectSound)
+        {
+            UGameplayStatics::PlaySoundAtLocation(this, DetectSound, GetActorLocation());
+        }
+    }
+
+    // 순찰 상태를 벗어나면(추격/공격/복귀 등), 대기하던 패트롤 타이머 취소
     if (CurrentState == EEnemyState::Patrol && NewState != EEnemyState::Patrol)
     {
         GetWorldTimerManager().ClearTimer(PatrolTimerHandle);
     }
 
-    // 2. 상태 적용
+    // 상태 적용
     CurrentState = NewState;
 
-    // 상태별 행동
+    // =========================================================
+    // 4. 상태별 행동 실행 (Switch)
+    // =========================================================
     switch (CurrentState)
     {
     case EEnemyState::Attack:
         AIC->StopMovement();
-        // 공격 가능하면 수행
+
+        // [재정비 회전] 공격 쿨타임(대기) 중에만 플레이어를 바라봄
+        // 공격 모션이 끝난 직후이므로, 다음 공격을 위해 플레이어 쪽으로 몸을 돌림
+        {
+            FVector Direction = Player->GetActorLocation() - GetActorLocation();
+            Direction.Z = 0.0f; // 높낮이 무시
+
+            FRotator TargetRot = Direction.Rotation();
+            // 5.0f 속도로 부드럽게 회전
+            FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, GetWorld()->GetDeltaSeconds(), 5.0f);
+            SetActorRotation(NewRot);
+        }
+
+        // 쿨타임 타이머가 돌고 있지 않다면 공격 실행
         if (!GetWorldTimerManager().IsTimerActive(AttackTimerHandle))
         {
             PerformAttack();
@@ -292,15 +323,18 @@ void AEnemyCharacter::UpdateAIState()
         break;
 
     case EEnemyState::Chase:
-        AIC->MoveToActor(Player, 5.0f); // 바짝 추격
+        // 플레이어에게 바짝 붙을 때까지(5cm) 이동
+        AIC->MoveToActor(Player, 5.0f);
         break;
 
     case EEnemyState::Patrol:
+        // 패트롤 지점에 도착했거나(Idle), 복귀해서 멈췄을 때
         if (AIC->GetMoveStatus() == EPathFollowingStatus::Idle)
         {
-            // 도착했는데 타이머가 안 돌고 있다면 3~5초 대기 예약
+            // 타이머가 없을 때만 새로 설정 (중복 실행 방지)
             if (!GetWorldTimerManager().IsTimerActive(PatrolTimerHandle))
             {
+                // 3~5초 대기 후 다른 지점으로 이동
                 float WaitTime = FMath::RandRange(3.0f, 5.0f);
                 GetWorldTimerManager().SetTimer(PatrolTimerHandle, this, &AEnemyCharacter::MoveToRandomPatrolPoint, WaitTime, false);
             }

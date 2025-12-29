@@ -2,7 +2,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UI/MainMenu/PRSplinePathActor.h"
 
-APRMenuPawn::APRMenuPawn() 
+APRMenuPawn::APRMenuPawn()
     : DummyRoot(nullptr), TargetSplineComp(nullptr), TargetSplineActor(nullptr), ElapsedTime(0.0f)
 {
 
@@ -26,7 +26,7 @@ void APRMenuPawn::StartCinematic()
 
 void APRMenuPawn::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
     if (!TargetSplineActor) {
         TArray<AActor*> FoundSplines;
