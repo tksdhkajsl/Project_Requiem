@@ -5,7 +5,11 @@
 
 AStage2Boss::AStage2Boss()
 {
-	GetStatComponent()->CurrHP = 1500.0f;
+	if (GetStatComponent())
+	{
+		GetStatComponent()->CurrHP = 1500.0f;
+	}
+
 	EXP = 800.0f;
 
 	bUsePhaseSystem = true;

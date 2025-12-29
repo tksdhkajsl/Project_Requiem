@@ -48,8 +48,20 @@ void ABossBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//========================
+	// Reset용 초기 상태 저장
+	//========================
+	InitialLocation = GetActorLocation();
+	InitialRotation = GetActorRotation();
+
+	InitialPhase = CurrentPhase;
+	bInitialUseRangedAttack = bUseRangedAttack;
+
+	InitialWalkSpeed = WalkSpeed;
+	InitialPhyAtt = GetStatComponent()->PhyAtt;
+
 	// 체력 초기화
-	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
+	GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
 
 	// 플레이어 캐릭터 캐시
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
@@ -95,21 +107,40 @@ void ABossBase::SetBossState(EBossState NewState)
 		// 캡슐 콜리전 끔
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-		// 죽음 몽타주 재생
-		if (DeathMontage)
-		{
-			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-			{
-				AnimInstance->Montage_Play(DeathMontage);
+		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
 
-				FOnMontageEnded EndDelegate;
-				EndDelegate.BindUObject(this, &ABossBase::OnDeathMontageEnded);
-				AnimInstance->Montage_SetEndDelegate(EndDelegate, DeathMontage);
-			}
+		// 죽음 몽타주 재생
+		if (DeathMontage && AnimInstance)
+		{
+			AnimInstance->Montage_Play(DeathMontage);
+
+
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ABossBase::OnDeathMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, DeathMontage);
 		}
 		else
 		{
-			K2_DestroyActor();
+			if (bDestroyOnDeath)
+			{
+				K2_DestroyActor();
+			}
+			else
+			{
+				SetActorHiddenInGame(true);
+				SetActorEnableCollision(false);
+				SetActorTickEnabled(false);
+				GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+				if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+				{
+					MoveComp->StopMovementImmediately();
+					MoveComp->DisableMovement();
+				}
+
+				StopBossBGM();
+			}
+
 		}
 
 		
@@ -119,12 +150,10 @@ void ABossBase::SetBossState(EBossState NewState)
 	case EBossState::PhaseChange:
 	{
 		// 페이즈 변경 연출 몽타주 재생
-		if (PhaseChangeMontage)
+		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+		if (PhaseChangeMontage && AnimInstance)
 		{
-			if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-			{
-				AnimInstance->Montage_Play(PhaseChangeMontage);
-			}
+			AnimInstance->Montage_Play(PhaseChangeMontage);
 		}
 
 		// 연출 중에는 이동 막기
@@ -349,11 +378,11 @@ void ABossBase::ReceiveDamage(float DamageAmount)
 		return;
 	}
 
-	OnBossStatUpdated.Broadcast(GetStatComponent()->CurrHP, GetStatComponent()->MaxHP, BossName);
-
 	Super::ReceiveDamage(DamageAmount);
 
-	if (GetStatComponent()->CurrHP <= 0.0f)
+	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+
+	if (GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.0f)//GetStatComponent()->GetStatMax(EFullStats::Health)
 	{
 		SetBossState(EBossState::Dead);
 
@@ -370,9 +399,9 @@ void ABossBase::ReceiveDamage(float DamageAmount)
 
 	bool bWillEnterPhaseChange = false;
 
-	if (bUsePhaseSystem && CurrentPhase == 1 && GetStatComponent()->MaxHP > 0.0f)
+	if (bUsePhaseSystem && CurrentPhase == 1 && GetStatComponent()->GetStatMax(EFullStats::Health) > 0.0f)
 	{
-		const float HPRatio = GetStatComponent()->CurrHP / GetStatComponent()->MaxHP;
+		const float HPRatio = GetStatComponent()->GetStatCurrent(EFullStats::Health) / GetStatComponent()->GetStatMax(EFullStats::Health);
 
 		if (HPRatio <= Phase2StartHPRatio)
 		{
@@ -673,7 +702,27 @@ void ABossBase::OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 void ABossBase::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (Montage != DeathMontage) return;
-	K2_DestroyActor();
+
+	if (bDestroyOnDeath)
+	{
+		K2_DestroyActor();
+		return;
+	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->DisableMovement();
+	}
+
+	StopBossBGM();
+
 }
 
 void ABossBase::LockMovement()
@@ -727,6 +776,10 @@ void ABossBase::PerformRangedAttack()
 		if (!AnimInstance->Montage_IsPlaying(RangedAttackMontage))
 		{
 			AnimInstance->Montage_Play(RangedAttackMontage);
+
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ABossBase::OnRangedMontageEnded);
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, RangedAttackMontage);
 		}
 	}
 }
@@ -859,14 +912,20 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	// 몽타주 있으면 재생, 실제 패턴은 노티파이에서 처리
 	if (Data->Montage)
 	{
-		if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+		UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+
+		// 몽타주 기반 패턴인데 AnimInstance가 없으면 실행 불가 → 안전 종료
+		if (!AnimInstance)
 		{
-			if (!AnimInstance->Montage_IsPlaying(Data->Montage))
-			{
-				AnimInstance->Montage_Play(Data->Montage);
-			}
+			FinishCurrentPattern();
 			return;
 		}
+
+		if (!AnimInstance->Montage_IsPlaying(Data->Montage))
+		{
+			AnimInstance->Montage_Play(Data->Montage);
+		}
+		return; // 몽타주 기반 패턴은 노티파이가 끝냄
 	}
 	switch (Pattern)
 	{
@@ -1110,39 +1169,111 @@ void ABossBase::SwitchBossBGMByPhase(int32 Phase)
 
 void ABossBase::ActivateBossBattle()
 {
-	// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
-	// AI 활성화 (팀원이 쓰는 AIController 변수명 확인)
-	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
-		//AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 다시 시작
-	//}
-	// 공격성, 이동 속도 등 전투 상태로 변경
-	//GetCharacterMovement()->MaxWalkSpeed = 600.f;
-	// UI 띄우기 등 추가 (예: Widget->SetVisibility(Visible))
+	// 혹시 비활성화되어 있었다면 보스전 시작 시 다시 활성화
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	// 여기서 최초로 broadcast로 2가지
-	// 1. 현재 체력, Max체력 => 체력 깍일때 마다, 무조건 broadcast
-	// 2. 보스몹 이름(FText) => 굳이 계속 하면 메모리 아까우니 한번만
+	// 플레이어 캐시
+	if (!TargetCharacter)
+	{
+		APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+		TargetCharacter = Cast<ACharacter>(PlayerPawn);
+	}
+
+	UnlockMovement();
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->SetMovementMode(MOVE_Walking);
+		MoveComp->MaxWalkSpeed = WalkSpeed;
+	}
+
+	if (GetStatComponent())
+	{
+		GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
+	}
+
+	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+	
+	StartBossBGM();
+
+	CurrentState = EBossState::Idle;
+
+	if (TargetCharacter)
+	{
+		SetBossState(EBossState::Chase);
+	}
+	else
+	{
+		SetBossState(EBossState::Idle);
+	}
+
 }
 
 void ABossBase::ResetBossToDefault()
 {
-	// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
-	// AI 끄기
-	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
-	//	AIC->GetBrainComponent()->StopLogic("Player Defeated");
-	//}
+	// 죽어서 비활성화된 상태였으면 다시 활성화
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	// 위치 초기화 및 체력 회복
-	//SetActorLocation(InitialLocation);
-	//SetActorRotation(FRotator::ZeroRotator);
+	WalkSpeed = InitialWalkSpeed;
+	GetStatComponent()->PhyAtt = InitialPhyAtt;
 
-	// 보스 스탯 컴포넌트가 있다면 (예시) => 체력 풀(Full)로 채우기
-	// StatComponent->SetHP(StatComponent->GetMaxHP());
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->MaxWalkSpeed = WalkSpeed;
+	}
 
-	// 애니메이션 몽타주 중지하고 Idle로
-	//GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
+	GetWorldTimerManager().ClearTimer(InvulnerableTimerHandle);
+	bIsInvulnerable = false;
 
-	// 플레이어 HUD초기화는 플레이어가 담당.
+	bIsExecutingPattern = false;
+	CurrentPattern = EBossPattern::None;
+	bIsInHitReact = false;
+
+	PendingAoERadius = 0.0f;
+	PendingAoEDamage = 0.0f;
+	PendingInvulnerableDuration = 0.0f;
+	PendingRecoveryTime = 0.0f;
+
+	AttackBlockedUntilTime = 0.0f;
+	LastHitReactTime = -9999.0f;
+
+	if (UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr)
+	{
+		AnimInstance->StopAllMontages(0.1f);
+	}
+
+	UnlockMovement();
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->SetMovementMode(MOVE_Walking);
+		MoveComp->MaxWalkSpeed = WalkSpeed;
+	}
+
+	CurrentPhase = InitialPhase;
+	bUseRangedAttack = bInitialUseRangedAttack;
+
+	SetActorLocation(InitialLocation);
+	SetActorRotation(InitialRotation);
+
+	if (GetStatComponent())
+	{
+		GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
+
+	}
+
+	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+
+	SetBossState(EBossState::Idle);
+
+	StopBossBGM();
+
 }
 
 

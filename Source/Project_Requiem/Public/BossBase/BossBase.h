@@ -154,7 +154,7 @@ protected:
 
 	// 시작하자마자 추적할지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State")
-	bool bAutoStartChase = true; 
+	bool bAutoStartChase = false;
 
 	void SetBossState(EBossState NewState);
 
@@ -180,6 +180,20 @@ protected:
 	// 보스 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Info")
 	FText BossName; 
+
+	// ==========================
+	// Reset용 초기값 저장
+	// ==========================
+	FVector InitialLocation;
+	FRotator InitialRotation;
+
+	int32 InitialPhase = 1;
+	bool bInitialUseRangedAttack = false;
+
+	float InitialWalkSpeed = 400.0f;
+	float InitialPhyAtt = 0.0f;
+
+
 
 	// 공격 타겟(플레이어 캐시)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Target")
@@ -406,6 +420,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* RangedAttackMontage = nullptr;
+
+	// 죽을 때 액터를 파괴할지(Reset 시스템을 쓰려면 false)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Death")
+	bool bDestroyOnDeath = false;
 
 	// 피격 리액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
