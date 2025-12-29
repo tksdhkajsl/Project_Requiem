@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "Characters/BaseCharacter.h"
+#include "Interface/Boss/BossControlInterface.h"
 
 #include "Sound/SoundBase.h"
 #include "Components/AudioComponent.h"
@@ -61,17 +62,10 @@ enum class EBossPattern : uint8
 	Pattern16 UMETA(DisplayName = "Pattern16 "),
 };
 
-	
 
-
-
-
-// 보스가 데미지를 받았을 때
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
-	FOnBossDamaged,
-	float, CurrentHP,
-	float, MaxHP
-);
+//==========================================================
+// (수정) 데미지 받았을 때 델리게이트 삭제
+//==========================================================
 
 // 보스가 죽었을 때 (EXP)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
@@ -138,9 +132,12 @@ struct FBossPatternData
 };
 
 
+//==========================================================
+// (수정) ABaseCharacter로 상속 변경, 인터페이스 상속 추가
+//==========================================================
 // 보스 베이스 클래스
 UCLASS()
-class PROJECT_REQUIEM_API ABossBase : public ACharacter
+class PROJECT_REQUIEM_API ABossBase : public ABaseCharacter, public IBossControlInterface
 {
 	GENERATED_BODY()
 
@@ -176,6 +173,10 @@ public:
 
 protected:
 	
+	//==========================================================
+	// (수정) 체력, 공격력 등 삭제(스텟 컴포넌트 추가)
+	//==========================================================
+
 	// 보스 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Info")
 	FText BossName; 
@@ -192,21 +193,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
 	float StoppingDistance = 80.0f; 
 
-	// 최대 체력
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Status")
-	float MaxHP = 1000.0f;
-
-	// 현재 체력
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Status")
-	float CurrentHP = 0.0f; 
-
 	// 사망 시 지급 경험치
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Reward")
-	float EXP = 500.0f; 
-
-	// 근접 공격 데미지
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
-	float MeleeDamage = 30.0f; 
+	float EXP = 500.0f;
 
 	// 근접 공격 유효 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
@@ -291,8 +280,8 @@ protected:
 
 
 	// 델리게이트
-	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
-	FOnBossDamaged OnBossDamaged;
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
+	FOnBossStatUpdated OnBossStatUpdated;
 
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossDead OnBossDead;
@@ -303,10 +292,19 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossPhaseChanged OnBossPhaseChanged;
 
+	virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }
+
 	// 근접 공격 시도
 	void PerformMeleeAttack();
 
 public:
+	//==========================================================
+	// (수정) 스텟 컴포넌트 추가로 인해 함수 override
+	//==========================================================
+
+	// 실제 보스 체력 깎는 용도
+	virtual void ReceiveDamage(float DamageAmount) override;
+
 	// ApplyDamage로 들어오는 데미지 처리(체력 감소/죽음/페이즈 전환)
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -579,5 +577,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
 	void SwitchBossBGMByPhase(int32 Phase);
 
+public:
+	// 문이 열릴 때 보스에게 내릴 명령
+	virtual void ActivateBossBattle() override;
 
+	// 보스에게 플레이어가 패배 하였을 시
+	virtual void ResetBossToDefault() override;
 };

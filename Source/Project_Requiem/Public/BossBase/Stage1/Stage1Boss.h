@@ -17,4 +17,5 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase) override;
+
 };

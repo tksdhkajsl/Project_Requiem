@@ -1,10 +1,11 @@
 // Stage2Boss.cpp
 #include "BossBase/Stage2/Stage2Boss.h"
+#include "ComponentSystems/Public/Stats/StatComponent.h"
 #include "Internationalization/Text.h"
 
 AStage2Boss::AStage2Boss()
 {
-	MaxHP = 1500.0f;
+	GetStatComponent()->CurrHP = 1500.0f;
 	EXP = 800.0f;
 
 	bUsePhaseSystem = true;

@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Animation/AnimInstance.h"
 
+#include "ComponentSystems/Public/Stats/StatComponent.h"
 #include "BossBase/Projectile/BossProjectile.h"
 
 #include "Components/AudioComponent.h"
@@ -48,7 +49,7 @@ void ABossBase::BeginPlay()
 	Super::BeginPlay();
 
 	// 체력 초기화
-	CurrentHP = MaxHP;
+	GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
 
 	// 플레이어 캐릭터 캐시
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
@@ -332,29 +333,27 @@ void ABossBase::UpdateDead(float DeltaTime)
 }
 
 
-// 데미지 처리 핵심
-float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
-	AController* EventInstigator, AActor* DamageCauser)
+void ABossBase::ReceiveDamage(float DamageAmount)
 {
-	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	//==========================================================
+	// (수정) TakeDamage에 있던 조건문들 ReceiveDamage로 이동
+	//==========================================================
 
-	if (ActualDamage <= 0.0f || CurrentState == EBossState::Dead)
+	if (DamageAmount <= 0.0f || CurrentState == EBossState::Dead)
 	{
-		return 0.0f;
+		return;
 	}
-
 	// 무적이면 데미지 무시
 	if (bIsInvulnerable)
 	{
-		return 0.0f;
+		return;
 	}
 
-	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
+	OnBossStatUpdated.Broadcast(GetStatComponent()->CurrHP, GetStatComponent()->MaxHP, BossName);
 
-	// 이벤트 : 보스바 갱신
-	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
+	Super::ReceiveDamage(DamageAmount);
 
-	if (CurrentHP <= 0.0f)
+	if (GetStatComponent()->CurrHP <= 0.0f)
 	{
 		SetBossState(EBossState::Dead);
 
@@ -366,22 +365,20 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		// 이벤트 : 경험치 보상
 		OnBossDead.Broadcast(EXP);
 
-		return ActualDamage;
+		return;
 	}
 
 	bool bWillEnterPhaseChange = false;
 
-	if (bUsePhaseSystem && CurrentPhase == 1 && MaxHP > 0.0f)
+	if (bUsePhaseSystem && CurrentPhase == 1 && GetStatComponent()->MaxHP > 0.0f)
 	{
-		const float HPRatio = CurrentHP / MaxHP;
+		const float HPRatio = GetStatComponent()->CurrHP / GetStatComponent()->MaxHP;
 
 		if (HPRatio <= Phase2StartHPRatio)
 		{
 			bWillEnterPhaseChange = true;
 		}
 	}
-
-			
 
 	// 페이즈 넘어갈때는 피격 스킵
 	if (!bWillEnterPhaseChange || bAllowHitReactBeforePhaseChange)
@@ -407,7 +404,17 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 		}
 	}
 
-	return ActualDamage;
+	return;
+}
+
+// 데미지 처리 핵심
+float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	LastHitInstigator = EventInstigator;
+
+	ReceiveDamage(DamageAmount);
+	return DamageAmount;
 }
 
 void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
@@ -415,7 +422,7 @@ void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 	if (NewPhase == 2 && bUsePhaseSystem)
 	{
 		WalkSpeed *= Phase2_WalkSpeedMultiplier;   
-		MeleeDamage *= Phase2_MeleeDamageMultiplier; 
+		GetStatComponent()->PhyAtt *= Phase2_MeleeDamageMultiplier; 
 
 		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 		{
@@ -476,7 +483,7 @@ void ABossBase::ApplyMeleeDamage()
 
 	UGameplayStatics::ApplyDamage(
 		TargetCharacter,
-		MeleeDamage,
+		GetStatComponent()->PhyAtt,
 		BossController, 
 		this,           
 		nullptr
@@ -1099,6 +1106,43 @@ void ABossBase::SwitchBossBGMByPhase(int32 Phase)
 	}
 
 	bBossBGMPlaying = true;
+}
+
+void ABossBase::ActivateBossBattle()
+{
+	// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
+	// AI 활성화 (팀원이 쓰는 AIController 변수명 확인)
+	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
+		//AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 다시 시작
+	//}
+	// 공격성, 이동 속도 등 전투 상태로 변경
+	//GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	// UI 띄우기 등 추가 (예: Widget->SetVisibility(Visible))
+
+	// 여기서 최초로 broadcast로 2가지
+	// 1. 현재 체력, Max체력 => 체력 깍일때 마다, 무조건 broadcast
+	// 2. 보스몹 이름(FText) => 굳이 계속 하면 메모리 아까우니 한번만
+}
+
+void ABossBase::ResetBossToDefault()
+{
+	// 이하 코드는 수도(의사)코드니 본인들의 로직에 맞게 변경 요망.
+	// AI 끄기
+	//if (AAIController* AIC = Cast<AAIController>(GetController())) {
+	//	AIC->GetBrainComponent()->StopLogic("Player Defeated");
+	//}
+
+	// 위치 초기화 및 체력 회복
+	//SetActorLocation(InitialLocation);
+	//SetActorRotation(FRotator::ZeroRotator);
+
+	// 보스 스탯 컴포넌트가 있다면 (예시) => 체력 풀(Full)로 채우기
+	// StatComponent->SetHP(StatComponent->GetMaxHP());
+
+	// 애니메이션 몽타주 중지하고 Idle로
+	//GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
+
+	// 플레이어 HUD초기화는 플레이어가 담당.
 }
 
 
