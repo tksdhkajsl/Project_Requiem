@@ -253,15 +253,20 @@ public:
 	/** 현재 죽었는지를 체크하는 변수(true = 죽음, false = 생존) */
 	bool IsDeath = false;
 
-	/** 포션(키보드 4번) */
+	/**[추가] 12/29, UPROPERTY와 UFUNCTION 추가하여 가비지 콜렉터 관리 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Potion")
 	int32 HPPotion = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Potion")
 	int32 MaxHPPotion = 9;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float RestoreHP = 30.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ConsumeStamina = 10.f;
+	UFUNCTION()
 	void AddPotion();
+	UFUNCTION()
 	void EatPotion();
+	UFUNCTION()
 	void AddPotions(int32 Potion);
 	int32 GetHPPotion() const { return HPPotion; }
 
