@@ -120,6 +120,9 @@ void UBonfireWidget::InitializeStatValues()
 
     float PhyAtt = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
     StatRenderList->UpdateSingleStat(EFullStats::PhysicalAttack, PhyAtt);
+    // [추가] 12/29, 공격 속도가 표기가 안 되어 있었음
+    float AttSpeed = CachedStatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+    StatRenderList->UpdateSingleStat(EFullStats::AttackSpeed, AttSpeed);
     float MagAtt = CachedStatComponent->GetStatCurrent(EFullStats::MagicAttack);
     StatRenderList->UpdateSingleStat(EFullStats::MagicAttack, MagAtt);
     float PhyDef = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalDefense);
@@ -146,6 +149,9 @@ void UBonfireWidget::HandleRequestLevelUpStat(ELevelUpStats StatType)
 
     if (CachedStatComponent->AllocatedLevelUpStat(StatType)) {
         UE_LOG(LogTemp, Log, TEXT("Level Up Success! Remaining Exp: %.0f"), CachedStatComponent->GetCurrentExp());
+
+        // [추가] 12/29, 스탯 투자가 되면 즉시 UI 전체 값을 갱신하여 변화를 보여줌
+        InitializeStatValues();
     }
     else UE_LOG(LogTemp, Warning, TEXT("Not Enough Souls!"));
 }
