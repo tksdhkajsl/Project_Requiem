@@ -72,6 +72,9 @@ void UBonfireWidget::OnBuyPotionClicked()
 {
     if (!PlayerRef && !CachedStatComponent) return;
 
+    // [추가] 12/29, 최대 포션 개수 제한 설정함 (최대 포션 개수 이상으로 구매 불가)
+    if (PlayerRef->HPPotion >= PlayerRef->MaxHPPotion) return;
+
     if (CachedStatComponent->GetCurrentExp() >= PotionPrice) {
         PlayerRef->AddPotion();
         CachedStatComponent->AddCurrentExp(-PotionPrice);
