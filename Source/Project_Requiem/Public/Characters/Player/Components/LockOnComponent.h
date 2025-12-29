@@ -39,6 +39,34 @@ public:
 	TObjectPtr<AActor> CurrentTarget = nullptr;
 #pragma endregion
 
+protected:
+	// [추가] 12/29, 물리 쿼리 대신 이벤트를 감지할 구체 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn|Optimization")
+	TObjectPtr<class USphereComponent> DetectionSphere;
+
+	// [추가] 12/29, 현재 내 주변에 들어와 있는 적들의 목록 (캐싱)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn|Optimization")
+	TArray<TObjectPtr<AActor>> CandidateTargets;
+
+	// [추가] 12/29, 감지 영역 들어옴
+	UFUNCTION()
+	void OnDetectionSphereBeginOverlap(UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
+	// [추가] 12/29, 감지 영역 나감
+	UFUNCTION()
+	void OnDetectionSphereEndOverlap(UPrimitiveComponent* OverlappedComp,
+		AActor* OtherActor, 
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex);
+
+	// [추가] 12/29, 타겟 유효성 검사 헬퍼 함수
+	bool IsValidTarget(AActor* TargetActor) const;
+
 #pragma region 기능 함수
 public:
 	// 외부(PlayerCharacter)에서 입력 키를 누르면 호출할 함수
