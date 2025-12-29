@@ -25,7 +25,7 @@ class PROJECT_REQUIEM_API AEnemyCharacter : public ABaseCharacter
 {
     GENERATED_BODY()
 
-public:
+    public:
     AEnemyCharacter();
 
     // HP 위젯 컴포넌트
@@ -89,7 +89,11 @@ public:
 
     /** 플레이어 추격 시작 거리 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Chase")
-    float DetectionRange = 800.0f;
+    float DetectionRange = 1500.0f;
+
+    // 플레이어 추격 가능 거리
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Chase")
+    float CanChaseRange = 8000.0f;
 
     /** 패트롤 대기 시간용 타이머 핸들 */
     FTimerHandle PatrolTimerHandle;
@@ -104,7 +108,7 @@ public:
     UAnimMontage* AttackMontage;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-    float AttackRange = 100.0f; // 공격 사거리
+    float AttackRange = 80.0f; // 공격 사거리
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
     float AttackDelay = 1.5f;   // 공격 쿨타임

@@ -38,7 +38,7 @@ private:
 
 
     UPROPERTY(EditAnywhere, Category = "Cinematic")
-    float MoveDuration = 5.0f;
+    float MoveDuration = 15.0f;
 
     float ElapsedTime = 0.0f;
     bool bIsMoving = true;

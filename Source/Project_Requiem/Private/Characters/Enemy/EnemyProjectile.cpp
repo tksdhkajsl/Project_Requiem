@@ -29,17 +29,17 @@ AEnemyProjectile::AEnemyProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
+	ProjectileMovement->ProjectileGravityScale = 0.0f;
 	// 컴포넌트 자체 유도 기능은 끕니다 (우리가 Tick에서 직접 돌릴 예정)
 	ProjectileMovement->bIsHomingProjectile = false;
 
 	// 3. 비행 소리 컴포넌트
 	FlightAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("FlightAudioComp"));
 	FlightAudioComponent->SetupAttachment(RootComponent);
-	FlightAudioComponent->bAutoActivate = true; // 생성되자마자 재생
+	FlightAudioComponent->bAutoActivate = true; // 생성되자마자 재생	
 
-	// 4. 수명 (5초 뒤 자동 삭제)
-	InitialLifeSpan = 5.0f;
-
+	MaxLifeTime = 3.5f;
+	InitialLifeSpan = MaxLifeTime;
 }
 
 // Called when the game starts or when spawned
@@ -61,24 +61,45 @@ void AEnemyProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 이 로그가 안 뜨면 Tick이 꺼져있는 것임
-	//UE_LOG(LogTemp, Warning, TEXT("Homing Tick Running..."));
-
-	// 타겟이 존재하고 유효하다면 추적
+	// 타겟이 유효할 때만 유도 로직 수행
 	if (TargetActor && TargetActor->IsValidLowLevel())
 	{
-		// 1. 방향 계산
-		FVector Direction = (TargetActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		FVector ToTarget = TargetActor->GetActorLocation() - GetActorLocation();
+		float Distance = ToTarget.Size();
 
-		// 2. 부드럽게 회전 (InterpSpeed 20.0f = 강력한 유도)
+		// 내적 계산 (1.0: 정면, 0.0: 옆, -1.0: 뒤)
+		float DotValue = FVector::DotProduct(GetActorForwardVector(), ToTarget.GetSafeNormal());
+
+		// [살아있는 시간 계산]
+		// InitialLifeSpan에서 남은 수명(GetLifeSpan)을 빼면 '태어난 지 얼마나 됐는지' 알 수 있음
+		float TimeAlive = InitialLifeSpan - GetLifeSpan();
+
+		// =================================================================
+		// [최종 해결책] 유예 시간 + 엄격한 각도
+		// =================================================================
+		// 1. 발사 후 0.4초가 지났는가? (초반에는 각도가 안 좋아도 무조건 유도)
+		if (TimeAlive > 0.4f)
+		{
+			// 2. 이제는 엄격하게 검사!
+			// 내 정면(0.1f, 약 85도) 범위를 벗어나면, 즉시 유도를 포기하고 직선 비행
+			// 거리도 200 정도로 넉넉하게 둬서, 부딪히기 전에 피할 틈을 줌
+			if (DotValue < 0.1f || Distance < 40.0f)
+			{
+				TargetActor = nullptr; // 유도 끝 (직선 비행 시작)
+				return;
+			}
+		}
+
+		// 3. 회전 로직 (유도 계속)
+		FVector Direction = ToTarget.GetSafeNormal();
 		FRotator CurrentRot = GetActorRotation();
 		FRotator TargetRot = Direction.Rotation();
-		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, InterpSpeed);
 
-		// 3. 회전 적용
+		//회전각 뒤의 float 설정이 클 수록 각 꺽임 강도 높아짐.
+		FRotator NewRot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaTime, 5.0f);
+
 		SetActorRotation(NewRot);
 
-		// 4. 속도 벡터 업데이트 (머리가 향하는 곳으로 날아가게 함)
 		if (ProjectileMovement)
 		{
 			ProjectileMovement->Velocity = NewRot.Vector() * ProjectileMovement->InitialSpeed;

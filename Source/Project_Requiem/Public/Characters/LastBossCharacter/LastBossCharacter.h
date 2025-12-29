@@ -43,6 +43,8 @@ public:
 	FOnLastBossEndChangedPhase OnLastBossEndChangedPhase;
 	FOnLastBossStop	OnLastBossStop;
 
+	FOnMontageEnded OnMontageEnded;
+
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
 	FOnBossStatUpdated OnBossStatUpdated;
 	virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }

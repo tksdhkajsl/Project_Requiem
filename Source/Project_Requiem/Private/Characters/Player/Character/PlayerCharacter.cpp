@@ -624,9 +624,7 @@ void APlayerCharacter::PlayComboAttack()
 
 		StatComponent->ChangeStatCurrent(EFullStats::Stamina, -ConsumeStamina);
 	}
-	// =============================================================
-	// 상황 2: 몽타주가 재생 중이고, 그게 내 무기 몽타주라면 (콤보 연계)
-	// =============================================================
+
 	else if (AnimInst->GetCurrentActiveMontage() == CurrentComboMontage)
 	{
 		// 콤보 횟수 증가 (예: 1 -> 2)
