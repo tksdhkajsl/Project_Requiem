@@ -35,17 +35,24 @@ void APRPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 // ========================================================
 // 아이템 위젯 클래스
 // ========================================================
-void APRPlayerController::PushDownKeyboard1()
+//void APRPlayerController::PushDownKeyboard1()
+//{
+//	PlayerHUD->UpdateWeaponSlot(0);
+//}
+//void APRPlayerController::PushDownKeyboard2()
+//{
+//	PlayerHUD->UpdateWeaponSlot(1);
+//}
+//void APRPlayerController::PushDownKeyboard3()
+//{
+//	PlayerHUD->UpdateWeaponSlot(2);
+//}
+void APRPlayerController::UpdateHUDWeaponSlot(int32 SlotIndex)
 {
-	PlayerHUD->UpdateWeaponSlot(0);
-}
-void APRPlayerController::PushDownKeyboard2()
-{
-	PlayerHUD->UpdateWeaponSlot(1);
-}
-void APRPlayerController::PushDownKeyboard3()
-{
-	PlayerHUD->UpdateWeaponSlot(2);
+	if (PlayerHUD)
+	{
+		PlayerHUD->UpdateWeaponSlot(SlotIndex);
+	}
 }
 void APRPlayerController::PushDownKeyboard4(int32 PotionNum)
 {

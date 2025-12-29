@@ -398,36 +398,27 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	// 5. 무기 교체 사운드 추가
 	USoundBase* EquipWeaponSound = GetSoundFromDataTable(FName("EquipWeapon"));
 
-	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
+	//[수정] 12/29, UI 업데이트 로직 통합
+	if (PC)
+	{
+		// WeaponIndex는 1부터 시작하므로 -1을 해주면 0, 1, 2가 됨
+		PC->UpdateHUDWeaponSlot(WeaponIndex - 1);
+	}
 	switch (WeaponIndex)
 	{
 	case 1:
-		TargetCode = EWeaponCode::OneHandedSword; // 1번 -> 한손검
-		if (PC)
-		{
-			PC->PushDownKeyboard1();          // UI 업데이트
-		}
+		TargetCode = EWeaponCode::OneHandedSword;
 		break;
-
 	case 2:
-		TargetCode = EWeaponCode::TwoHandedSword; // 2번 -> 양손검
-		if (PC)
-		{
-			PC->PushDownKeyboard2();
-		}
+		TargetCode = EWeaponCode::TwoHandedSword;
 		break;
-
 	case 3:
-		TargetCode = EWeaponCode::DualBlade;      // 3번 -> 쌍검
-		if (PC)
-		{
-			PC->PushDownKeyboard3();
-		}
+		TargetCode = EWeaponCode::DualBlade;
 		break;
-
 	default:
-		return; // 1, 2, 3번이 아니면 아무것도 안 함
+		return;
 	}
+
 	// 맵에서 해당 무기의 콤보 데이터 가져오기
 	if (WeaponComboMap.Contains(TargetCode))
 	{
