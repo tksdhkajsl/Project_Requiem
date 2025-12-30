@@ -54,14 +54,6 @@ void ABossDoor::BeginPlay()
     EndTrigger->OnComponentBeginOverlap.AddDynamic(this, &ABossDoor::OnEndTriggerBeginOverlap);
 
     if (bIsBossCleared) SetDoorOpenInstant();
-
-
-    if (IsBoss12 && CachedBoss) {
-        CachedBossBase = Cast<ABossBase>(CachedBoss);
-        checkf(CachedBossBase, TEXT("Boss12 must derive from ABossBase"));
-
-        GetWorldTimerManager().SetTimerForNextTick(this, &ABossDoor::ForceBossIdle);
-    }
 }
 
 
@@ -104,11 +96,7 @@ void ABossDoor::ResetDoorAndBoss()
 {
     bIsOpened = false;
     EndTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-
-    if (CachedBoss && IsBoss12) {
-        ResetBossToDefault();
-    }
-    else if (CachedBoss) {
+     if (CachedBoss) {
         if (IBossControlInterface* BossInterface = Cast<IBossControlInterface>(CachedBoss)) {
             BossInterface->ResetBossToDefault();
         }
@@ -137,36 +125,20 @@ void ABossDoor::OnEndTriggerBeginOverlap(UPrimitiveComponent* OverlappedComponen
     APRPlayerController* PC = Cast<APRPlayerController>(Player->GetController());
     if (!PC) return;
 
-    // ============================
-    // Boss 1,2 (땜질 루트)
-    // ============================
-    if (IsBoss12) {
-        // HUD는 BossDoor 기준
-        PC->OnEnterBossRoom(this);
 
-        PlayDoorCloseAnimation();
-        EndTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-        ActivateBossBattle(); // Tick ON
-    }
-    // ============================
-    // 정상 보스 루트
-    // ============================
-    else
+    if (CachedBoss)
     {
-        if (CachedBoss)
+        if (IBossControlInterface* BossInterface = Cast<IBossControlInterface>(CachedBoss))
         {
-            if (IBossControlInterface* BossInterface = Cast<IBossControlInterface>(CachedBoss))
-            {
-                PC->OnEnterBossRoom(CachedBoss);
+            PC->OnEnterBossRoom(CachedBoss);
 
-                PlayDoorCloseAnimation();
-                EndTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            PlayDoorCloseAnimation();
+            EndTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-                BossInterface->ActivateBossBattle();
-            }
+            BossInterface->ActivateBossBattle();
         }
     }
+    
 
     //if (CachedBoss) {
     //    IBossControlInterface* BossInterface = Cast<IBossControlInterface>(CachedBoss);
@@ -247,39 +219,4 @@ void ABossDoor::ResetLightsIntensity()
 
     CurrentIntensity = MaxIntensity;
     IntensityDirection = -1;
-}
-
-// ========================================================
-// 보스 12용
-// ========================================================
-void ABossDoor::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
-
-    if (CachedBossBase) {
-        OnBossStatUpdated.Broadcast(CachedBossBase->CurrentHP, CachedBossBase->MaxHP, CachedBossBase->BossName);
-
-        if (CachedBossBase->CurrentHP <= 0.f) {
-            SetActorTickEnabled(false);
-            OnBossDeathUpdated.Broadcast();
-        }
-    }
-}
-void ABossDoor::ActivateBossBattle()
-{
-    if (IsBoss12) {
-        SetActorTickEnabled(true);
-        CachedBossBase->CurrentState = EBossState::Chase;
-    }
-}
-void ABossDoor::ResetBossToDefault()
-{
-    if (IsBoss12) {
-        SetActorTickEnabled(false);
-        ForceBossIdle();
-    }
-}
-void ABossDoor::ForceBossIdle()
-{
-    CachedBossBase->CurrentState = EBossState::Idle;
 }

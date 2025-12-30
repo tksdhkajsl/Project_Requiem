@@ -1,14 +1,10 @@
 // Stage1Boss.cpp
 #include "BossBase/Stage1/Stage1Boss.h"
-#include "ComponentSystems/Public/Stats/StatComponent.h"
 #include "Internationalization/Text.h"
 
 AStage1Boss::AStage1Boss()
 {
-	if (GetStatComponent())
-	{
-		GetStatComponent()->CurrHP = 800.0f;
-	}
+	MaxHP = 800.0f;
 
 	EXP = 300.0f;
 

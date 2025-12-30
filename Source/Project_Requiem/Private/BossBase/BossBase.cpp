@@ -48,9 +48,6 @@ void ABossBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//========================
-	// Reset용 초기 상태 저장
-	//========================
 	InitialLocation = GetActorLocation();
 	InitialRotation = GetActorRotation();
 
@@ -58,10 +55,10 @@ void ABossBase::BeginPlay()
 	bInitialUseRangedAttack = bUseRangedAttack;
 
 	InitialWalkSpeed = WalkSpeed;
-	InitialPhyAtt = GetStatComponent()->PhyAtt;
+	
 
 	// 체력 초기화
-	GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
+	CurrentHP = MaxHP;
 
 	// 플레이어 캐릭터 캐시
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
@@ -379,27 +376,30 @@ void ABossBase::UpdateDead(float DeltaTime)
 }
 
 
-void ABossBase::ReceiveDamage(float DamageAmount)
-{
-	//==========================================================
-	// (수정) TakeDamage에 있던 조건문들 ReceiveDamage로 이동
-	//==========================================================
 
-	if (DamageAmount <= 0.0f || CurrentState == EBossState::Dead)
+// 데미지 처리 핵심
+float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	const float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage <= 0.0f || CurrentState == EBossState::Dead)
 	{
-		return;
+		return 0.0f;
 	}
+
 	// 무적이면 데미지 무시
 	if (bIsInvulnerable)
 	{
-		return;
+		return 0.0f;
 	}
 
-	Super::ReceiveDamage(DamageAmount);
+	CurrentHP = FMath::Clamp(CurrentHP - ActualDamage, 0.0f, MaxHP);
 
-	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+	// 이벤트 : 보스바 갱신
+	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
-	if (GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.0f)//GetStatComponent()->GetStatMax(EFullStats::Health)
+	if (CurrentHP <= 0.0f)
 	{
 		SetBossState(EBossState::Dead);
 
@@ -411,56 +411,9 @@ void ABossBase::ReceiveDamage(float DamageAmount)
 		// 이벤트 : 경험치 보상
 		OnBossDead.Broadcast(EXP);
 
-		return;
+		return ActualDamage;
 	}
-
-	bool bWillEnterPhaseChange = false;
-
-	if (bUsePhaseSystem && CurrentPhase == 1 && GetStatComponent()->GetStatMax(EFullStats::Health) > 0.0f)
-	{
-		const float HPRatio = GetStatComponent()->GetStatCurrent(EFullStats::Health) / GetStatComponent()->GetStatMax(EFullStats::Health);
-
-		if (HPRatio <= Phase2StartHPRatio)
-		{
-			bWillEnterPhaseChange = true;
-		}
-	}
-
-	// 페이즈 넘어갈때는 피격 스킵
-	if (!bWillEnterPhaseChange || bAllowHitReactBeforePhaseChange)
-	{
-		TryPlayHitReact();
-	}
-
-	if (bWillEnterPhaseChange)
-	{
-		const int32 OldPhase = CurrentPhase;
-		CurrentPhase = 2;
-
-		// 외부에 페이즈 변경 알림
-		OnBossPhaseChanged.Broadcast(CurrentPhase, OldPhase);
-
-		OnPhaseChanged(CurrentPhase, OldPhase);
-
-		SetBossState(EBossState::PhaseChange);
-
-		if (bAutoSwitchBGMOnPhaseChanged)
-		{
-			SwitchBossBGMByPhase(CurrentPhase);
-		}
-	}
-
-	return;
-}
-
-// 데미지 처리 핵심
-float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
-	AController* EventInstigator, AActor* DamageCauser)
-{
-	LastHitInstigator = EventInstigator;
-
-	ReceiveDamage(DamageAmount);
-	return DamageAmount;
+	return ActualDamage;
 }
 
 void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
@@ -468,7 +421,7 @@ void ABossBase::OnPhaseChanged_Implementation(int32 NewPhase, int32 OldPhase)
 	if (NewPhase == 2 && bUsePhaseSystem)
 	{
 		WalkSpeed *= Phase2_WalkSpeedMultiplier;
-		GetStatComponent()->PhyAtt *= Phase2_MeleeDamageMultiplier;
+		MeleeDamage *= Phase2_MeleeDamageMultiplier;
 
 		if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 		{
@@ -548,7 +501,7 @@ void ABossBase::ApplyMeleeDamage()
 
 	UGameplayStatics::ApplyDamage(
 		TargetCharacter,
-		GetStatComponent()->PhyAtt,
+		MeleeDamage,
 		BossController,
 		this,
 		nullptr
@@ -720,18 +673,32 @@ void ABossBase::StartCurrentPatternInvulnerability()
 // 원거리 공격 끝나면 이동 풀기
 void ABossBase::OnRangedMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == RangedAttackMontage)
+	if (Montage != RangedAttackMontage) return;
+
+	UnlockMovement();
+
+	if (bIsExecutingPattern)
 	{
-		UnlockMovement();
+		FinishCurrentPattern();
 	}
 }
 
 // 근접 몽타주 종료
 void ABossBase::OnMeleeMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (Montage == MeleeAttackMontage)
+	if (Montage != MeleeAttackMontage) return;
+
+	UnlockMovement();
+
+	// “패턴 실행 중이었으면” 여기서 패턴 종료
+	if (bIsExecutingPattern)
 	{
-		UnlockMovement();
+		FinishCurrentPattern();
+	}
+	else
+	{
+		// 패턴이 아니라 일반 근접 공격(기본 공격)이라면
+		// Attack 상태에서 다음 판단을 하게 하거나 Chase로 넘기고 싶으면 여기서 처리 가능
 	}
 }
 
@@ -977,6 +944,7 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 	case EBossPattern::Pattern12:
 	case EBossPattern::Pattern13:
 		PerformMeleeAttack();
+		
 		break;
 
 	case EBossPattern::Pattern6:
@@ -984,21 +952,23 @@ void ABossBase::ExecutePattern(EBossPattern Pattern)
 		// 페이즈2 전용
 	case EBossPattern::Pattern14:
 	case EBossPattern::Pattern15:
-		ApplyRangedAttackFromSocket(RightHandSocketName);
+		PerformRangedAttack();
+		
 		break;
 
 	case EBossPattern::Pattern8:
 		// 페이즈2 전용
 	case EBossPattern::Pattern16:
-		ApplyRangedAttackFromSocket(RightHandSocketName);
-		ApplyRangedAttackFromSocket(LeftHandSocketName);
+		PerformRangedAttack();
+		
 		break;
 
 	default:
 		break;
 	}
-
-	FinishCurrentPattern();
+	
+		FinishCurrentPattern();
+	
 }
 
 
@@ -1225,12 +1195,11 @@ void ABossBase::ActivateBossBattle()
 		MoveComp->MaxWalkSpeed = WalkSpeed;
 	}
 
-	if (GetStatComponent())
-	{
-		GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
-	}
+	// 체력: 예전 방식(CurrentHP/MaxHP)으로 초기화
+	CurrentHP = MaxHP;
 
-	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+	// UI 갱신(보스바)
+	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
 	StartBossBGM();
 
@@ -1256,7 +1225,6 @@ void ABossBase::ResetBossToDefault()
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	WalkSpeed = InitialWalkSpeed;
-	GetStatComponent()->PhyAtt = InitialPhyAtt;
 
 	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
@@ -1298,13 +1266,11 @@ void ABossBase::ResetBossToDefault()
 	SetActorLocation(InitialLocation);
 	SetActorRotation(InitialRotation);
 
-	if (GetStatComponent())
-	{
-		GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->GetStatMax(EFullStats::Health));
+	// 체력: 예전 방식(CurrentHP/MaxHP)으로 리셋
+	CurrentHP = MaxHP;
 
-	}
-
-	OnBossStatUpdated.Broadcast(GetStatComponent()->GetStatCurrent(EFullStats::Health), GetStatComponent()->GetStatMax(EFullStats::Health), BossName);
+	// UI 갱신(보스바)
+	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
 	SetBossState(EBossState::Idle);
 
