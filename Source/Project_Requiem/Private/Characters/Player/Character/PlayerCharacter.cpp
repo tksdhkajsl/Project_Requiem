@@ -205,6 +205,8 @@ void APlayerCharacter::BeginPlay()
 	}
 
 	EquipWeapon(1.f);
+	// [수정] 12/30, 무기 장착 사운드를 실행해라
+	bCanPlayEquipSound = true;
 	IsDeath = false;
 	SetSpawnLocation(this->GetActorLocation());
 	if (!CachedBoss && BossClass) {
