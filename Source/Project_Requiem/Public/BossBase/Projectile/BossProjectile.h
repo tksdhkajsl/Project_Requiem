@@ -30,7 +30,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|Component")
 	UShapeComponent* Collision = nullptr;
 
@@ -50,10 +50,10 @@ protected:
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Damage")
-	float Damage = 20.0f; 
+	float Damage = 20.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Life")
-	float LifeTime = 5.0f; 
+	float LifeTime = 5.0f;
 
 	// Pawn에 맞으면 사라질지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Projectile|Behavior")
@@ -65,7 +65,7 @@ protected:
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|State")
-	bool bHitOnce = false; 
+	bool bHitOnce = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|VFX")
 	UNiagaraComponent* VfxComp = nullptr;

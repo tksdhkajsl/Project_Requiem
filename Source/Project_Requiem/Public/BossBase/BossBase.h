@@ -7,7 +7,7 @@
 
 #include "Sound/SoundBase.h"
 #include "Components/AudioComponent.h"
-
+#include "Interface/Boss/BossControlInterface.h"
 #include "BossBase.generated.h"
 
 
@@ -18,11 +18,11 @@ class UAnimMontage;
 UENUM(BlueprintType)
 enum class EBossState : uint8
 {
-	Idle        UMETA(DisplayName = "Idle"),        
-	Chase       UMETA(DisplayName = "Chase"),       
-	Attack      UMETA(DisplayName = "Attack"),      
-	PhaseChange UMETA(DisplayName = "PhaseChange"), 
-	Dead        UMETA(DisplayName = "Dead"),        
+	Idle        UMETA(DisplayName = "Idle"),
+	Chase       UMETA(DisplayName = "Chase"),
+	Attack      UMETA(DisplayName = "Attack"),
+	PhaseChange UMETA(DisplayName = "PhaseChange"),
+	Dead        UMETA(DisplayName = "Dead"),
 };
 
 
@@ -30,8 +30,8 @@ enum class EBossState : uint8
 UENUM(BlueprintType)
 enum class EBossAttackType : uint8
 {
-	Melee  UMETA(DisplayName = "Melee"),  
-	Ranged UMETA(DisplayName = "Ranged")  
+	Melee  UMETA(DisplayName = "Melee"),
+	Ranged UMETA(DisplayName = "Ranged")
 };
 
 // 보스 패턴
@@ -61,18 +61,16 @@ enum class EBossPattern : uint8
 	Pattern16 UMETA(DisplayName = "Pattern16 "),
 };
 
-	
 
+//==========================================================
+// (수정) 데미지 받았을 때 델리게이트 삭제
+//==========================================================
 
-
-
-// 보스가 데미지를 받았을 때
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(
 	FOnBossDamaged,
 	float, CurrentHP,
 	float, MaxHP
 );
-
 // 보스가 죽었을 때 (EXP)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
 	FOnBossDead,
@@ -134,15 +132,36 @@ struct FBossPatternData
 	// 무적 지속시간
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float InvulnerableDuration = 0.0f;
-	
+
 };
 
 
+//==========================================================
+// (수정) ABaseCharacter로 상속 변경, 인터페이스 상속 추가
+//==========================================================
 // 보스 베이스 클래스
 UCLASS()
-class PROJECT_REQUIEM_API ABossBase : public ACharacter
+class PROJECT_REQUIEM_API ABossBase : public ACharacter, public IBossControlInterface
 {
 	GENERATED_BODY()
+
+#pragma region IBossControlInterface
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
+	FOnBossStatUpdated OnBossStatUpdated;
+	virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }
+
+	UPROPERTY(BlueprintAssignable, Category = "Boss|Interface")
+	FOnBossDeathUpdated OnBossDeathUpdated;
+	virtual FOnBossDeathUpdated& GetBossDeathDelegate() override { return OnBossDeathUpdated; }
+
+	// 보스 방 입장 시 실행 함수
+	virtual void ActivateBossBattle() override;
+
+	// 플레이어 사망 시 실행 함수
+	virtual void ResetBossToDefault() override;
+#pragma endregion
+
 
 public:
 	ABossBase();
@@ -150,18 +169,18 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음) */
+
 	// 상태 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State")
-	EBossState CurrentState = EBossState::Idle; 
+	EBossState CurrentState = EBossState::Idle;
 
 	// 시작하자마자 추적할지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|State")
-	bool bAutoStartChase = true; 
+	bool bAutoStartChase = true;
 
 	void SetBossState(EBossState NewState);
 
-	void UpdateState(float DeltaTime);     
+	void UpdateState(float DeltaTime);
 	void UpdateIdle(float DeltaTime);
 	void UpdateChase(float DeltaTime);
 	void UpdateAttack(float DeltaTime);
@@ -169,52 +188,63 @@ public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음
 	void UpdateDead(float DeltaTime);
 
 public:
-	virtual void Tick(float DeltaTime) override; 
+	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+
 
 protected:
-public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음) */
-	// 보스 이름
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Info")
-	FText BossName; 
-
-	// 공격 타겟(플레이어 캐시)
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Target")
-	ACharacter* TargetCharacter = nullptr; 
-
-	// 이동속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
-	float WalkSpeed = 400.0f; 
-
-	// 너무 가까우면 겹침 방지로 멈추는 거리
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
-	float StoppingDistance = 80.0f; 
-
-	// 최대 체력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Status")
 	float MaxHP = 1000.0f;
 
-	// 현재 체력
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Status")
-	float CurrentHP = 0.0f; 
+	float CurrentHP = 0.0f;
+
+	// 보스 이름
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Info")
+	FText BossName;
+
+	// ==========================
+	// Reset용 초기값 저장
+	// ==========================
+	FVector InitialLocation;
+	FRotator InitialRotation;
+
+	int32 InitialPhase = 1;
+	bool bInitialUseRangedAttack = false;
+
+	float InitialWalkSpeed = 400.0f;
+	float InitialPhyAtt = 0.0f;
+
+
+
+	// 공격 타겟(플레이어 캐시)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Target")
+	ACharacter* TargetCharacter = nullptr;
+
+	// 이동속도
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
+	float WalkSpeed = 400.0f;
+
+	// 너무 가까우면 겹침 방지로 멈추는 거리
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
+	float StoppingDistance = 80.0f;
 
 	// 사망 시 지급 경험치
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Reward")
-	float EXP = 500.0f; 
+	float EXP = 500.0f;
 
 	// 근접 공격 데미지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
-	float MeleeDamage = 30.0f; 
+	float MeleeDamage = 30.0f;
 
 	// 근접 공격 유효 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
-	float MeleeAttackRange = 250.0f; 
+	float MeleeAttackRange = 250.0f;
 
 	// 근접 공격 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack")
-	float MeleeAttackInterval = 1.5f; 
+	float MeleeAttackInterval = 1.5f;
 
 	// 공격 중 이동 잠금
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Movement")
@@ -228,15 +258,15 @@ public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음
 
 	// 원거리 사용 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
-	bool bUseRangedAttack = false; 
+	bool bUseRangedAttack = false;
 
 	// 원거리 공격 거리
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
-	float RangedAttackRange = 800.0f; 
+	float RangedAttackRange = 800.0f;
 
 	// 원거리 공격 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
-	float RangedAttackInterval = 3.0f; 
+	float RangedAttackInterval = 3.0f;
 
 	float TimeSinceLastRangedAttack = 0.0f;
 
@@ -261,10 +291,10 @@ public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음
 
 	// 발사체 데미지
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
-	float RangedDamage = 20.0f; 
+	float RangedDamage = 20.0f;
 
 	// 원거리 공격 시도
-	void PerformRangedAttack(); 
+	void PerformRangedAttack();
 
 	// 1페이즈 발사체
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Attack|Ranged")
@@ -291,6 +321,7 @@ public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음
 
 
 	// 델리게이트
+
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossDamaged OnBossDamaged;
 
@@ -303,10 +334,18 @@ public: /** 12/27 접근제한자만 변경(참조를 가져올 방법이 없음
 	UPROPERTY(BlueprintAssignable, Category = "Boss|Event")
 	FOnBossPhaseChanged OnBossPhaseChanged;
 
+	
+
 	// 근접 공격 시도
 	void PerformMeleeAttack();
 
 public:
+	//==========================================================
+	// (수정) 스텟 컴포넌트 추가로 인해 함수 override
+	//==========================================================
+
+	
+
 	// ApplyDamage로 들어오는 데미지 처리(체력 감소/죽음/페이즈 전환)
 	virtual float TakeDamage(
 		float DamageAmount,
@@ -316,27 +355,27 @@ public:
 	) override;
 
 protected:
-	
+
 	// 페이즈 시스템 사용 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
-	bool bUsePhaseSystem = false; 
+	bool bUsePhaseSystem = false;
 
 	// 현재 페이즈
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
-	int32 CurrentPhase = 1; 
+	int32 CurrentPhase = 1;
 
 	// HP 비율이 이 값 이하이면 2페이즈 진입
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase",
 		meta = (ClampMin = "0.0", ClampMax = "1.0", EditCondition = "bUsePhaseSystem"))
-	float Phase2StartHPRatio = 0.5f; 
+	float Phase2StartHPRatio = 0.5f;
 
 	// 2페이즈 이동속도 배수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (EditCondition = "bUsePhaseSystem"))
-	float Phase2_WalkSpeedMultiplier = 1.2f; 
+	float Phase2_WalkSpeedMultiplier = 1.2f;
 
 	// 2페이즈 근접데미지 배수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase", meta = (EditCondition = "bUsePhaseSystem"))
-	float Phase2_MeleeDamageMultiplier = 1.5f; 
+	float Phase2_MeleeDamageMultiplier = 1.5f;
 
 	// 보스 페이즈 시 범위 공격 계수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase|AOE")
@@ -345,8 +384,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase|AOE")
 	float PhaseChangeAoEDamage = 40.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
+	float PhaseChangeRecoveryTime = 0.8f;
+
+	FTimerHandle PhaseChangeRecoveryTimerHandle;
+
 public:
-	
+
 	UFUNCTION(BlueprintNativeEvent, Category = "Boss|Phase")
 	void OnPhaseChanged(int32 NewPhase, int32 OldPhase);
 
@@ -369,7 +413,7 @@ public:
 
 	// 소켓 지정 발사
 	UFUNCTION(BlueprintCallable, Category = "Boss|Attack")
-	void ApplyRangedAttackFromSocket(FName SocketName); 
+	void ApplyRangedAttackFromSocket(FName SocketName);
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|Invuln")
 	void StartInvulnerability(float Duration);
@@ -409,6 +453,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* RangedAttackMontage = nullptr;
 
+	// 죽을 때 액터를 파괴할지(Reset 시스템을 쓰려면 false)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Death")
+	bool bDestroyOnDeath = false;
+
 	// 피격 리액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Anim")
 	UAnimMontage* HitReactMontage = nullptr;
@@ -417,7 +465,7 @@ protected:
 	bool bEnableHitReact = true;
 
 	// 히트 리액션 쿨타임
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta=(ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact", meta = (ClampMin = "0.0"))
 	float HitReactCooldown = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|HitReact")
@@ -519,7 +567,7 @@ protected:
 
 	// 패턴 강제 중단
 	void AbortCurrentPatternForHitReact();
-	
+
 
 protected:
 
@@ -578,6 +626,4 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Boss|BGM")
 	void SwitchBossBGMByPhase(int32 Phase);
-
-
 };

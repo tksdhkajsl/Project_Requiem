@@ -5,6 +5,7 @@
 AStage2Boss::AStage2Boss()
 {
 	MaxHP = 1500.0f;
+
 	EXP = 800.0f;
 
 	bUsePhaseSystem = true;

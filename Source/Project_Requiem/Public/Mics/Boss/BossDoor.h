@@ -9,7 +9,7 @@
 #include "BossDoor.generated.h"
 
 UCLASS()
-class PROJECT_REQUIEM_API ABossDoor : public AActor, public IInteractionInterface, public IBossControlInterface
+class PROJECT_REQUIEM_API ABossDoor : public AActor, public IInteractionInterface
 {
     GENERATED_BODY()
 
@@ -140,32 +140,6 @@ protected:
 
     /** 리셋 시 조도를 0으로 만드는 함수 */
     void ResetLightsIntensity();
-#pragma endregion
-
-/** 12/27 추가 */
-#pragma region 보스1,2용
-public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool IsBoss12 = false;
-
-    virtual void ActivateBossBattle()override;
-    virtual void ResetBossToDefault()override;
-    UFUNCTION()
-    void ForceBossIdle();
-
-    UPROPERTY(BlueprintAssignable)
-    FOnBossStatUpdated OnBossStatUpdated;
-    virtual FOnBossStatUpdated& GetBossStatDelegate() override { return OnBossStatUpdated; }
-
-    UPROPERTY(BlueprintAssignable)
-    FOnBossDeathUpdated OnBossDeathUpdated;
-    virtual FOnBossDeathUpdated& GetBossDeathDelegate() override { return OnBossDeathUpdated; }
-
-    virtual void Tick(float DeltaTime) override;
-private:
-    UPROPERTY()
-    ABossBase* CachedBossBase;
-
 #pragma endregion
 
 };
