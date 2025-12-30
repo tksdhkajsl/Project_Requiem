@@ -158,54 +158,58 @@ void ULockOnComponent::EndLockOn()
 
 AActor* ULockOnComponent::FindBestTarget()
 {
-	// [수정 전]
-	//if (!OwnerCharacter || !PlayerController) return nullptr;
 
-	//FVector Start = OwnerCharacter->GetActorLocation();
-	//TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	//ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn)); // Pawn만 검색
+	// [수정 전], 12/29, 기존의 타겟을 찾는 구조
+	/*
+	if (!OwnerCharacter || !PlayerController) return nullptr;
 
-	//TArray<AActor*> ActorsToIgnore;
-	//ActorsToIgnore.Add(OwnerCharacter);
+	FVector Start = OwnerCharacter->GetActorLocation();
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn)); // Pawn만 검색
 
-	//TArray<AActor*> OutActors;
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(OwnerCharacter);
 
-	//// 내 주변 구체 범위 내의 모든 Pawn 찾기
-	//UKismetSystemLibrary::SphereOverlapActors(
-	//	GetWorld(),
-	//	Start,
-	//	SearchRadius,
-	//	ObjectTypes,
-	//	ABaseCharacter::StaticClass(), // BaseCharacter 상속받은 애들만
-	//	ActorsToIgnore,
-	//	OutActors
-	//);
+	TArray<AActor*> OutActors;
 
-	//AActor* BestTarget = nullptr;
-	//float ClosestDot = -1.0f; // -1(뒤) ~ 1(앞)
+	// 내 주변 구체 범위 내의 모든 Pawn 찾기
+	UKismetSystemLibrary::SphereOverlapActors(
+		GetWorld(),
+		Start,
+		SearchRadius,
+		ObjectTypes,
+		ABaseCharacter::StaticClass(), // BaseCharacter 상속받은 애들만
+		ActorsToIgnore,
+		OutActors
+	);
 
-	//for (AActor* Actor : OutActors)
-	//{
-	//	ABaseCharacter* Enemy = Cast<ABaseCharacter>(Actor);
-	//	// 죽은 적은 무시
-	//	if (!Enemy || !Enemy->GetStatComponent() || Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)
-	//		continue;
+	AActor* BestTarget = nullptr;
+	float ClosestDot = -1.0f; // -1(뒤) ~ 1(앞)
 
-	//	// 2. 화면 중앙에 가장 가까운 적 찾기 (내적 이용)
-	//	FVector ToTarget = (Actor->GetActorLocation() - Start).GetSafeNormal();
-	//	FVector CameraForward = PlayerController->PlayerCameraManager->GetCameraRotation().Vector();
+	for (AActor* Actor : OutActors)
+	{
+		ABaseCharacter* Enemy = Cast<ABaseCharacter>(Actor);
+		// 죽은 적은 무시
+		if (!Enemy || !Enemy->GetStatComponent() || Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)
+			continue;
 
-	//	float Dot = FVector::DotProduct(CameraForward, ToTarget);
+		// 2. 화면 중앙에 가장 가까운 적 찾기 (내적 이용)
+		FVector ToTarget = (Actor->GetActorLocation() - Start).GetSafeNormal();
+		FVector CameraForward = PlayerController->PlayerCameraManager->GetCameraRotation().Vector();
 
-	//	// 화면 앞쪽(0.5 이상)에 있고, 이전에 찾은 애보다 더 중앙에 가까우면 선택
-	//	if (Dot > 0.5f && Dot > ClosestDot)
-	//	{
-	//		ClosestDot = Dot;
-	//		BestTarget = Actor;
-	//	}
-	//}
+		float Dot = FVector::DotProduct(CameraForward, ToTarget);
 
-	//return BestTarget;
+		// 화면 앞쪽(0.5 이상)에 있고, 이전에 찾은 애보다 더 중앙에 가까우면 선택
+		if (Dot > 0.5f && Dot > ClosestDot)
+		{
+			ClosestDot = Dot;
+			BestTarget = Actor;
+		}
+	}
+
+	return BestTarget;
+	*/
+	
 
 	// [수정] 12/29, for (AActor* Actor : OutActors)를 안 쓰기 위해서 바꿈
 
@@ -257,13 +261,16 @@ void ULockOnComponent::UpdateTargetLock(float DeltaTime)
 	
 	/// 코드 변경 필요 : 12/23(보스 1,2는 StatComponent 사용하지 않음)
 	// [수정 전]
-	//ABaseCharacter* Enemy = Cast<ABaseCharacter>(CurrentTarget);
-	//// 타겟 유효성 검사 (적이 죽었으면 락온 해제)
-	//if (Enemy && Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)
-	//{
-	//	EndLockOn();
-	//	return;
-	//}
+	/*
+	ABaseCharacter* Enemy = Cast<ABaseCharacter>(CurrentTarget);
+	// 타겟 유효성 검사 (적이 죽었으면 락온 해제)
+	if (Enemy && Enemy->GetStatComponent()->GetStatCurrent(EFullStats::Health) <= 0.f)
+	{
+		EndLockOn();
+		return;
+	}
+	*/
+	
 
 	// [수정] 12/29, 타겟 사망 여부 확인 (IsValidTarget 재활용)
 	if (!IsValidTarget(CurrentTarget))
