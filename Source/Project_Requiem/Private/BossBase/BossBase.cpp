@@ -194,7 +194,14 @@ void ABossBase::UpdateState(float DeltaTime)
 
 void ABossBase::UpdateIdle(float DeltaTime)
 {
-	// 등장 모션, 포즈 유지
+	if (!TargetCharacter) return;
+
+	FVector ToTarget = TargetCharacter->GetActorLocation() - GetActorLocation();
+	ToTarget.Z = 0.0f;
+	ToTarget.Normalize();
+
+	const FRotator TargetRot = ToTarget.Rotation();
+	SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaTime, 5.0f));
 }
 
 void ABossBase::UpdateChase(float DeltaTime)
@@ -481,8 +488,27 @@ void ABossBase::FinishPhaseChange()
 	}
 
 	UnlockMovement();
+	SetBossState(EBossState::Idle);
 
-	SetBossState(EBossState::Chase);
+	if (GetWorld())
+	{
+		GetWorldTimerManager().ClearTimer(PhaseChangeRecoveryTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			PhaseChangeRecoveryTimerHandle,
+			[this]()
+			{
+				if (CurrentState == EBossState::Dead) return;
+				if (TargetCharacter)
+				{
+					SetBossState(EBossState::Chase);
+				}
+			},
+			PhaseChangeRecoveryTime,
+			false
+		);
+	}
+
+
 }
 
 // 페이즈 전환 범위 공격 실행

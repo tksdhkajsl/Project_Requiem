@@ -357,6 +357,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase|AOE")
 	float PhaseChangeAoEDamage = 40.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Phase")
+	float PhaseChangeRecoveryTime = 0.8f;
+
+	FTimerHandle PhaseChangeRecoveryTimerHandle;
+
 public:
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Boss|Phase")
