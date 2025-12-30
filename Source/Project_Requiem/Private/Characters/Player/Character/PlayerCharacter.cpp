@@ -200,11 +200,38 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//APlayerController* PC = Cast<APlayerController>(GetController());
+	//if (PC) {
+	//	PC->SetIgnoreMoveInput(false);
+	//	PC->SetIgnoreLookInput(false);
+
+	//	FInputModeGameOnly InputMode;
+	//	PC->SetInputMode(InputMode);
+	//	PC->bShowMouseCursor = false;
+	//	PC->SetControlRotation(FRotator::ZeroRotator);
+	//}
+
+	// [추가] 12/30, 플레이어 ViewPitch 제한
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+	{
+		// PlayerCameraManager가 유효한지 확인
+		if (PC->PlayerCameraManager)
+		{
+			// ViewPitchMin: 아래로 내려다보는 제한 (기본값 -90.0)
+			PC->PlayerCameraManager->ViewPitchMin = -30.0f;
+
+			// ViewPitchMax: 위로 올려다보는 제한 (기본값 90.0)
+			PC->PlayerCameraManager->ViewPitchMax = 45.0f;
+		}
+	}
+
 	if (GetMesh()) {
 		AnimInstance = GetMesh()->GetAnimInstance();	// ABP 객체 가져오기		
 	}
 
 	EquipWeapon(1.f);
+	// [수정] 12/30, 무기 장착 사운드를 실행해라
+	bCanPlayEquipSound = true;
 	IsDeath = false;
 	SetSpawnLocation(this->GetActorLocation());
 	if (!CachedBoss && BossClass) {
