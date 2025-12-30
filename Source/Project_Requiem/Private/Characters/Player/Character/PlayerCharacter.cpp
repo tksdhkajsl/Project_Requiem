@@ -84,6 +84,11 @@ APlayerCharacter::APlayerCharacter()
 	PotionEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("PotionEffectComponent"));
 	PotionEffectComponent->SetupAttachment(RootComponent);
 	PotionEffectComponent->bAutoActivate = false; // 게임 시작하자마자 이펙트 나오면 안 되므로 꺼둠
+
+	// [추가] 12/29, 플레이어의 걷기, 달리기 사운드를 관리할 컴포넌트
+	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));
+	MovementAudioComp->SetupAttachment(GetRootComponent());
+	MovementAudioComp->bAutoActivate = false; // 평소엔 꺼둠
 }
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -101,7 +106,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	{
 		// 기본 이동 입력
 		UInputAction* MoveAction = InputConfig->GetAction(EHumanoidInput::Move);
-		if (MoveAction) EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+		if (MoveAction)
+		{
+			EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+			
+			// [추가] 12/29, 이동 입력에서 손을 뗐을 때 걷거나 달리는 사운드 끔
+			EIC->BindAction(MoveAction, ETriggerEvent::Completed, this, &ThisClass::StopMoveSound);
+		}
 
 		// 화면 회전 입력
 		UInputAction* LookAction = InputConfig->GetAction(EHumanoidInput::Look);
@@ -298,6 +309,32 @@ void APlayerCharacter::Move(const FInputActionValue& Value)
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 	}
+
+	// [추가] 12/29, 걷거나 달리는 소리 재생
+	FName RowName = bIsSprint ? FName("Sprint") : FName("Walk");
+	USoundBase* TargetSound = GetSoundFromDataTable(RowName);
+
+	if (TargetSound && MovementAudioComp)
+	{
+		// 이미 같은 소리가 나고 있으면 무시 (중복 재생 방지)
+		if (MovementAudioComp->IsPlaying() && MovementAudioComp->Sound == TargetSound)
+		{
+			return;
+		}
+
+		// 소리 교체 및 재생
+		MovementAudioComp->SetSound(TargetSound);
+		MovementAudioComp->Play();
+	}
+}
+void APlayerCharacter::StopMoveSound(const FInputActionValue& Value)
+{
+	// [추가] 12/29, 키보드 뗐으니 소리 끄기
+	if (MovementAudioComp && MovementAudioComp->IsPlaying())
+	{
+		// 0.1초 동안 부드럽게 끄기 (뚝 끊김 방지)
+		MovementAudioComp->FadeOut(0.1f, 0.0f);
+	}
 }
 void APlayerCharacter::Look(const FInputActionValue& Value)
 {
@@ -339,6 +376,10 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	}
 	// 4. 구르기 실행 로직
 	StatComponent->ChangeStatCurrent(EFullStats::Stamina, -ConsumeStamina);
+
+	// [추가] 12/29, 구르는 동안 스태미나 회복을 멈춘다.
+	StatComponent->SetStaminaRegenPaused(true);
+
 	// 입력 방향으로 회전 (이동 키를 누르고 있을 때만)
 	if (!GetLastMovementInputVector().IsNearlyZero())
 	{
@@ -353,6 +394,13 @@ void APlayerCharacter::Roll(const FInputActionValue& Value)
 	}
 	// 구르기 몽타주 재생
 	PlayAnimMontage(RollMontage);
+
+	// [추가] 12/29, 구르기 사운드 추가
+	USoundBase* RollSound = GetSoundFromDataTable(FName("Roll"));
+	if (RollSound)
+	{
+		UGameplayStatics::PlaySound2D(this, RollSound);
+	}
 
 	// 몽타주 종료 델리게이트 연결 (끝나면 원래대로 복구하기 위함)
 	FOnMontageEnded EndDelegate;
@@ -370,6 +418,7 @@ void APlayerCharacter::SetSprintMode(const FInputActionValue& Value)
 	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 	bIsSprint = true;
 	StatComponent->StatsRegenMap[EFullStats::Stamina].TickRate = 0.f;
+
 }
 void APlayerCharacter::SetWalkMode(const FInputActionValue& Value)
 {
@@ -390,7 +439,7 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 
 	/** 12/27 CurrentWeaponType이 존재하는 이유는?? */
 	// 3. 숫자 -> Enum 변환
-	EWeaponCode TargetCode = EWeaponCode::OneHandedSword;
+	//CurrentWeaponType = EWeaponCode::OneHandedSword;
 
 	// 4. 내 컨트롤러 가져오기 (APRPlayerController로 형변환)
 	APRPlayerController* PC = Cast<APRPlayerController>(GetController());
@@ -398,40 +447,31 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 	// 5. 무기 교체 사운드 추가
 	USoundBase* EquipWeaponSound = GetSoundFromDataTable(FName("EquipWeapon"));
 
-	// 5. 입력 번호에 따라 TargetCode 설정 및 UI 갱신
+	//[수정] 12/29, UI 업데이트 로직 통합
+	if (PC)
+	{
+		// WeaponIndex는 1부터 시작하므로 -1을 해주면 0, 1, 2가 됨
+		PC->UpdateHUDWeaponSlot(WeaponIndex - 1);
+	}
 	switch (WeaponIndex)
 	{
 	case 1:
-		TargetCode = EWeaponCode::OneHandedSword; // 1번 -> 한손검
-		if (PC)
-		{
-			PC->PushDownKeyboard1();          // UI 업데이트
-		}
+		CurrentWeaponType = EWeaponCode::OneHandedSword;
 		break;
-
 	case 2:
-		TargetCode = EWeaponCode::TwoHandedSword; // 2번 -> 양손검
-		if (PC)
-		{
-			PC->PushDownKeyboard2();
-		}
+		CurrentWeaponType = EWeaponCode::TwoHandedSword;
 		break;
-
 	case 3:
-		TargetCode = EWeaponCode::DualBlade;      // 3번 -> 쌍검
-		if (PC)
-		{
-			PC->PushDownKeyboard3();
-		}
+		CurrentWeaponType = EWeaponCode::DualBlade;
 		break;
-
 	default:
-		return; // 1, 2, 3번이 아니면 아무것도 안 함
+		return;
 	}
+
 	// 맵에서 해당 무기의 콤보 데이터 가져오기
-	if (WeaponComboMap.Contains(TargetCode))
+	if (WeaponComboMap.Contains(CurrentWeaponType))
 	{
-		FWeaponComboData Data = WeaponComboMap[TargetCode];
+		FWeaponComboData Data = WeaponComboMap[CurrentWeaponType];
 
 		// 1. 몽타주 교체
 		CurrentComboMontage = Data.Montage;
@@ -444,15 +484,13 @@ void APlayerCharacter::EquipWeapon(const FInputActionValue& Value)
 		bIsNextAttackRequested = false;
 	}
 
-	CurrentWeaponType = TargetCode;
-
 	// =============================================================
 	// 6. 실제 무기 교체 로직 (WeaponManager 활용)
 	// =============================================================
 	if (WeaponManager)
 	{
 		// A. 매니저에게서 해당 코드의 무기(미리 소환된 것)를 가져옵니다.
-		AWeaponActor* NewWeapon = WeaponManager->GetWeaponInstance(TargetCode);
+		AWeaponActor* NewWeapon = WeaponManager->GetWeaponInstance(CurrentWeaponType);
 
 		// 무기가 존재하고, 현재 들고 있는 무기와 다를 때만 교체 진행
 		if (NewWeapon && NewWeapon != CurrentWeapon)
@@ -586,9 +624,7 @@ void APlayerCharacter::PlayComboAttack()
 
 		StatComponent->ChangeStatCurrent(EFullStats::Stamina, -ConsumeStamina);
 	}
-	// =============================================================
-	// 상황 2: 몽타주가 재생 중이고, 그게 내 무기 몽타주라면 (콤보 연계)
-	// =============================================================
+
 	else if (AnimInst->GetCurrentActiveMontage() == CurrentComboMontage)
 	{
 		// 콤보 횟수 증가 (예: 1 -> 2)
@@ -694,6 +730,9 @@ void APlayerCharacter::OnRollMontageEnded(UAnimMontage* Montage, bool bInterrupt
 		bUseControllerRotationYaw = true;
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 	}
+
+	// [추가] 12/29, 구르기가 끝나면 스태미나 회복을 다시 실행한다.
+	StatComponent->SetStaminaRegenPaused(false);
 }
 
 void APlayerCharacter::AddExp(float Amount)

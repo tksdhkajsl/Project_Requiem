@@ -82,6 +82,8 @@ public:
 	UInputConfig* InputConfig;
 
 	void Move(const FInputActionValue& Value);
+	// [추가] 12/29 키보드에서 손을 뗐을 때 걷기,달리기 사운드 멈출 함수
+	void StopMoveSound(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Roll(const FInputActionValue& Value);
 	void SetSprintMode(const FInputActionValue& Value);
@@ -158,6 +160,9 @@ public:
 	UFUNCTION()
 	UWeaponMasteryComponent* GetWeaponMasteryComponent() { return WeaponMastery; 	}
 
+	// 데이터 테이블에서 사운드를 가져오는 헬퍼 함수
+	USoundBase* GetSoundFromDataTable(FName RowName) const;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Camera")
 	TObjectPtr<class USpringArmComponent> SpringArm = nullptr;
@@ -171,6 +176,9 @@ protected:
 	TObjectPtr<class ULockOnComponent> LockOnComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UNiagaraComponent> PotionEffectComponent;
+	// [추가] 12/29, 플레이어의 오디오 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<class UAudioComponent> MovementAudioComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
 	TObjectPtr<class UDataTable> SoundDataTable;
@@ -200,9 +208,6 @@ protected:
 	// 실제 무적 상태를 저장할 변수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|State")
 	bool bIsInvincible = false;
-
-	// 데이터 테이블에서 사운드를 가져오는 헬퍼 함수
-	USoundBase* GetSoundFromDataTable(FName RowName) const;
 
 private:
 	UPROPERTY()
@@ -253,15 +258,20 @@ public:
 	/** 현재 죽었는지를 체크하는 변수(true = 죽음, false = 생존) */
 	bool IsDeath = false;
 
-	/** 포션(키보드 4번) */
+	/**[추가] 12/29, UPROPERTY와 UFUNCTION 추가하여 가비지 콜렉터 관리 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Potion")
 	int32 HPPotion = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Potion")
 	int32 MaxHPPotion = 9;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float RestoreHP = 30.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float ConsumeStamina = 10.f;
+	UFUNCTION()
 	void AddPotion();
+	UFUNCTION()
 	void EatPotion();
+	UFUNCTION()
 	void AddPotions(int32 Potion);
 	int32 GetHPPotion() const { return HPPotion; }
 

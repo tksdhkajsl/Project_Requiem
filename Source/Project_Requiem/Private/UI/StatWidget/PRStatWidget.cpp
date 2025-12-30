@@ -85,6 +85,9 @@ void UPRStatWidget::InitializeStatValues()
 
     float PhyAtt = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
     StatRenderList->UpdateSingleStat(EFullStats::PhysicalAttack, PhyAtt);
+    // [추가] 12/29, 공격 속도가 표기가 안 되어 있었음
+    float AttSpeed = CachedStatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+    StatRenderList->UpdateSingleStat(EFullStats::AttackSpeed, AttSpeed);
     float MagAtt = CachedStatComponent->GetStatCurrent(EFullStats::MagicAttack);
     StatRenderList->UpdateSingleStat(EFullStats::MagicAttack, MagAtt);
     float PhyDef = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalDefense);

@@ -3,6 +3,7 @@
 
 #include "Characters/LastBossCharacter/LastBossCharacter.h"
 #include "ComponentSystems/Public/Stats/StatComponent.h"
+#include "Characters/Player/Character/PlayerCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AIController.h"
@@ -77,6 +78,14 @@ void ALastBossCharacter::Die()
 
 void ALastBossCharacter::ApplyExp(float ExpAmount)
 {
+	// 경험치 드랍()
+	/** 12/27 이 경우 자기자신(보스)가 경험치를 먹게 됩니다. 플레이어를 찾아서 플레이어한테 줘야 합니다.
+	 * ex) 플레이어컨트롤러-> GetOwner -> cast<aplayercharacter> -> player->Applyexp 와 같은식.
+	*/
+	APlayerCharacter* Player = Cast<APlayerCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+
+	Player->AddExp(ExpAmount);
+
 	OnApplyExp.Broadcast(ExpAmount);
 }
 
@@ -108,7 +117,6 @@ void ALastBossCharacter::LastBossSpawn(UAnimMontage* Montage)
 		// 몽타주 종료 이후 
 		if (Duration > 0.0f)
 		{
-			FOnMontageEnded OnMontageEnded;
 			OnMontageEnded.BindUObject(this, &ALastBossCharacter::LastBossEndSpawn);
 			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(OnMontageEnded, Montage);
 		}
@@ -121,6 +129,8 @@ void ALastBossCharacter::LastBossSpawn(UAnimMontage* Montage)
 
 void ALastBossCharacter::LastBossEndSpawn(UAnimMontage* Montage, bool bInterrupted)
 {
+	OnMontageEnded.Unbind();
+
 	bLastBossInvincible = false;
 
 	OnLastBossSpawn.Broadcast();
@@ -154,7 +164,6 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 		// 페이즈 변경 몽타주 종료 이후
 		if (Duration > 0.0f)
 		{
-			FOnMontageEnded OnMontageEnded;
 			OnMontageEnded.BindUObject(this, &ALastBossCharacter::LastBossEndPhaseChage);
 			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(OnMontageEnded, Montage);
 		}
@@ -168,6 +177,8 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 
 void ALastBossCharacter::LastBossEndPhaseChage(UAnimMontage* Montage, bool bInterrupted)
 {
+	OnMontageEnded.Unbind();
+
 	// 즉시 몽타주 정지(애니메이션 블루프린트가 구(이전) 메시에 접근하지 않도록)
 	if (GetMesh() && GetMesh()->GetAnimInstance())
 	{
@@ -249,7 +260,6 @@ void ALastBossCharacter::LastBossDead(UAnimMontage* Montage)
 		// 페이즈 변경 몽타주 종료 이후
 		if (Duration > 0.0f)
 		{
-			FOnMontageEnded OnMontageEnded;
 			OnMontageEnded.BindUObject(this, &ALastBossCharacter::LastBossEndDead);
 			GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(OnMontageEnded, Montage);
 		}
@@ -262,11 +272,9 @@ void ALastBossCharacter::LastBossDead(UAnimMontage* Montage)
 
 void ALastBossCharacter::LastBossEndDead(UAnimMontage* Montage, bool bInterrupted)
 {
-	// 경험치 드랍()
-	/** 12/27 이 경우 자기자신(보스)가 경험치를 먹게 됩니다. 플레이어를 찾아서 플레이어한테 줘야 합니다.
-	  * ex) 플레이어컨트롤러-> GetOwner -> cast<aplayercharacter> -> player->Applyexp 와 같은식.
-	*/
-	//ApplyExp(DropExp);
+	OnMontageEnded.Unbind();
+
+	ApplyExp(DropExp);
 
 	OnBossDeathUpdated.Broadcast();
 	Destroy();
@@ -317,5 +325,8 @@ void ALastBossCharacter::ResetLastBoss()
 	//GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
 	/** 12/27 체력 회복 방법 종전과 동일하게 변경 */
 	GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->MaxHP);
+
+	// 몽타주 종료 델리게이트 Unbind
+	OnMontageEnded.Unbind();
 }
 

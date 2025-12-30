@@ -16,7 +16,7 @@ class PROJECT_REQUIEM_API AEnemyProjectile : public AActor
 {
 	GENERATED_BODY()
 	
-public:	
+	public:
 	// Sets default values for this actor's properties
 	AEnemyProjectile();
 
@@ -60,8 +60,13 @@ public:
 	// 매 프레임 유도 로직 수행
 	virtual void Tick(float DeltaTime) override;
 
+	// 유도 강도(높을 수록 유도 강해짐)
 	UPROPERTY(EditAnywhere, Category = "Homing")
 	float InterpSpeed = 1.5f;
+
+	// 발사체 수명 (3.5초 뒤 자동 삭제)
+	UPROPERTY(EditAnywhere, Category = "Homing")
+	float MaxLifeTime = 0.0f;
 
 	// =============================================================
 	// 4. 충돌 이벤트
