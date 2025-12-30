@@ -6,6 +6,7 @@
 #include "Characters/Player/Character/PlayerCharacter.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/AudioComponent.h"
 #include "AIController.h"
 #include "BrainComponent.h"
 #include <Kismet/GameplayStatics.h>
@@ -16,6 +17,9 @@ ALastBossCharacter::ALastBossCharacter()
 
 	SpawnProjectileLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Projectile"));
 	SpawnProjectileLocation->SetupAttachment(RootComponent);
+
+	BackGroundMusicComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BackGroundMusic"));
+	BackGroundMusicComponent->SetupAttachment(RootComponent);
 }
 
 void ALastBossCharacter::BeginPlay()
@@ -110,6 +114,11 @@ void ALastBossCharacter::AddPatternMontage()
 
 void ALastBossCharacter::LastBossSpawn(UAnimMontage* Montage)
 {
+	// 페이즈 1 백그라운드 음악 실행
+	PlayBackgroundMusic(PhaseOneMusic);
+
+	GetMesh()->SetVisibility(true, true);
+
 	if (Montage && GetMesh() && GetMesh()->GetAnimInstance())
 	{
 		// 스폰시 몽타주 실행
@@ -151,6 +160,9 @@ void ALastBossCharacter::LastBossPhaseChage(UAnimMontage* Montage)
 
 	// 페이즈 바뀜
 	bPhaseChanged = true;
+
+	// 백그라운드 음악 종료
+	StopBackgroundMusic();
 
 	// 페이즈 변경 델리게이트 
 	OnLastBossChangedPhase.Broadcast();
@@ -231,6 +243,9 @@ void ALastBossCharacter::LastBossEndPhaseChage(UAnimMontage* Montage, bool bInte
 				// 교체 완료 후 피격 허용
 				bLastBossInvincible = false;
 
+				// 페이즈 2 백그라운드 음악 실행
+				PlayBackgroundMusic(PhaseTwoMusic);
+
 				OnLastBossEndChangedPhase.Broadcast();
 			}),
 		0.05f, // 0.05초 지연: 필요시 더 줄이거나 늘려 테스트
@@ -276,7 +291,11 @@ void ALastBossCharacter::LastBossEndDead(UAnimMontage* Montage, bool bInterrupte
 
 	ApplyExp(DropExp);
 
+	// 백그라운드 음악 종료
+	StopBackgroundMusic();
+
 	OnBossDeathUpdated.Broadcast();
+
 	Destroy();
 
 
@@ -310,10 +329,35 @@ void ALastBossCharacter::ResetBossToDefault()
 	GetMesh()->GetAnimInstance()->StopAllMontages(0.2f);
 }
 
+void ALastBossCharacter::PlayBackgroundMusic(USoundWave* Sound)
+{
+	if (!Sound)
+		return;
+	if (!BackGroundMusicComponent)
+		return;
+
+	StopBackgroundMusic();
+
+	BackGroundMusicComponent->SetSound(Sound);
+	BackGroundMusicComponent->Play();
+}
+
+void ALastBossCharacter::StopBackgroundMusic()
+{
+	if (BackGroundMusicComponent && BackGroundMusicComponent->IsPlaying())
+	{
+		BackGroundMusicComponent->Stop();
+		BackGroundMusicComponent->SetSound(nullptr);
+	}
+}
+
 void ALastBossCharacter::ResetLastBoss()
 {
 	/** 12/27 보스 체력바 숨기기 위해서 */
 	OnBossDeathUpdated.Broadcast();
+
+	GetMesh()->SetVisibility(false, true);
+
 	// 위치 초기화
 	SetActorLocation(SpawnLocation);
 	SetActorRotation(FRotator::ZeroRotator);
@@ -325,6 +369,9 @@ void ALastBossCharacter::ResetLastBoss()
 	//GetStatComponent()->CurrHP = GetStatComponent()->MaxHP;
 	/** 12/27 체력 회복 방법 종전과 동일하게 변경 */
 	GetStatComponent()->ChangeStatCurrent(EFullStats::Health, GetStatComponent()->MaxHP);
+
+	// 백그라운드 음악 종료
+	StopBackgroundMusic();
 
 	// 몽타주 종료 델리게이트 Unbind
 	OnMontageEnded.Unbind();

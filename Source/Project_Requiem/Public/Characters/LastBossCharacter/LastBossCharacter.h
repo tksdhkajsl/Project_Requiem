@@ -105,6 +105,12 @@ public:
 	// 플레이어 사망 시 실행 함수
 	virtual void ResetBossToDefault() override;
 
+	// 백그라운드 음악 실행 함수
+	void PlayBackgroundMusic(class USoundWave* Sound);
+
+	// 백그라운드 음악 정지 함수
+	void StopBackgroundMusic();
+
 private:
 	// 보스 초기화 함수
 	void ResetLastBoss();
@@ -113,7 +119,19 @@ protected:
 	// 투사체 스폰 위치
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
 	TObjectPtr<class USceneComponent> SpawnProjectileLocation = nullptr;
+	
+	// 오디오 컴포넌트
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Component")
+	TObjectPtr<class UAudioComponent> BackGroundMusicComponent = nullptr;
 
+	// 페이즈 1 백그라운드 음악
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Music")
+	TObjectPtr<class USoundWave> PhaseOneMusic = nullptr;
+	// 페이즈 2 백그라운드 음악
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Music")
+	TObjectPtr<class USoundWave> PhaseTwoMusic = nullptr;
+
+	// 페이즈 2 메시
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<class USkeletalMesh> PhaseTwoSkeletalMesh = nullptr;
 
