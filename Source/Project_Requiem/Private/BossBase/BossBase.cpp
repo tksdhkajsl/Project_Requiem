@@ -10,6 +10,7 @@
 #include "Components/AudioComponent.h"
 #include "Sound/SoundBase.h"
 
+#include "Characters/Player/Character/PlayerCharacter.h"
 
 void ABossBase::Tick(float DeltaTime)
 {
@@ -47,6 +48,8 @@ ABossBase::ABossBase()
 void ABossBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	StopBossBGM();
 
 	InitialLocation = GetActorLocation();
 	InitialRotation = GetActorRotation();
@@ -399,6 +402,9 @@ float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 	// 이벤트 : 보스바 갱신
 	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
+	/* 12/30 플레이어 HUD 보스체력바 변경 브로드캐스트 던지기*/
+	OnBossStatUpdated.Broadcast(CurrentHP, MaxHP, BossName);
+
 	if (CurrentHP <= 0.0f)
 	{
 		SetBossState(EBossState::Dead);
@@ -726,6 +732,17 @@ void ABossBase::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	StopBossBGM();
 
+
+	/* 12/30 레벨 전환 용 */
+	
+	if (TargetCharacter) {
+		APlayerCharacter* Player = Cast<APlayerCharacter>(TargetCharacter);
+		Player->SavePlayerComponents();
+	}
+	if (!NextLevelName.IsNone()) {
+		FString Options = TEXT("?DefaultPlayerStartTag=Stage_Start");
+		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true, Options);
+	}
 }
 
 void ABossBase::LockMovement()
@@ -1201,6 +1218,9 @@ void ABossBase::ActivateBossBattle()
 	// UI 갱신(보스바)
 	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
 
+	/* 12/30 플레이어 HUD 보스체력바 변경 브로드캐스트 던지기*/
+	OnBossStatUpdated.Broadcast(CurrentHP, MaxHP, BossName);
+
 	StartBossBGM();
 
 	CurrentState = EBossState::Idle;
@@ -1271,6 +1291,9 @@ void ABossBase::ResetBossToDefault()
 
 	// UI 갱신(보스바)
 	OnBossDamaged.Broadcast(CurrentHP, MaxHP);
+	
+	/** 12/30 보스 체력바 숨기기 위해서 */
+	OnBossDeathUpdated.Broadcast();
 
 	SetBossState(EBossState::Idle);
 

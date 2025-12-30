@@ -200,6 +200,8 @@ void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	LoadPlayerComponents();
+
 	//APlayerController* PC = Cast<APlayerController>(GetController());
 	//if (PC) {
 	//	PC->SetIgnoreMoveInput(false);
@@ -913,4 +915,37 @@ void APlayerCharacter::HandleStageEntered(EStageType NewStage)
 
 	if (CurrentStage == EStageType::Stage2) SnowNiagara->Activate();
 	else SnowNiagara->Deactivate();
+}
+
+bool APlayerCharacter::SavePlayerComponents()
+{
+	if (!WeaponManager || !WeaponMastery || !GetStatComponent()) return false;
+
+	UPRGameInstance* GI = Cast<UPRGameInstance>(GetGameInstance());
+	if (!GI) return false;
+
+	//GI->SavedWeaponManager = nullptr;
+	GI->SavedWeaponMastery = nullptr;
+	GI->SavedStatComponent = nullptr;
+
+	//if (WeaponManager) GI->SavedWeaponManager = Cast<UWeaponManagerComponent>(StaticDuplicateObject(WeaponManager, GI, NAME_None));
+	GI->SavedWeaponMastery = Cast<UWeaponMasteryComponent>(StaticDuplicateObject(WeaponMastery, GI, NAME_None));
+	GI->SavedStatComponent = Cast<UStatComponent>(StaticDuplicateObject(GetStatComponent(), GI, NAME_None));
+
+	return true;
+}
+
+bool APlayerCharacter::LoadPlayerComponents()
+{
+	if (!WeaponManager || !WeaponMastery || !GetStatComponent()) return false;
+
+	UPRGameInstance* GI = Cast<UPRGameInstance>(GetGameInstance());
+	if (!GI) return false;
+
+	//if (GI->SavedWeaponManager && WeaponManager) UEngine::CopyPropertiesForUnrelatedObjects(GI->SavedWeaponManager, WeaponManager);
+	if (GI->SavedWeaponMastery && WeaponManager) UEngine::CopyPropertiesForUnrelatedObjects(GI->SavedWeaponMastery, WeaponMastery);
+	if (GI->SavedStatComponent && StatComponent) UEngine::CopyPropertiesForUnrelatedObjects(GI->SavedStatComponent, StatComponent);
+
+
+	return false;
 }

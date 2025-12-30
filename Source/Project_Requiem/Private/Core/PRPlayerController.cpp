@@ -27,6 +27,9 @@ void APRPlayerController::BeginPlay()
 			UE_LOG(LogTemp, Error, TEXT("void APRPlayerController::BeginPlay() : Not Binding HUDWidgetClass"));
 		}
 	}
+
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
 }
 void APRPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {

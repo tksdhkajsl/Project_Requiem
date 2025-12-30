@@ -162,6 +162,13 @@ public:
 	virtual void ResetBossToDefault() override;
 #pragma endregion
 
+public:
+	/* 12/30 PlayerCharacter에서 EBossState와 CurrentHP 를 사용하므로, Getter 뚫어놓음.*/
+	EBossState GetBossBaseState() { return CurrentState; }
+	float	   GetBossBaseCurrentHP() { return CurrentHP; }
+	/* 12/30 죽었을때, 블프에서 레벨 전환 할 수 있도록 변수 추가*/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName NextLevelName;
 
 public:
 	ABossBase();

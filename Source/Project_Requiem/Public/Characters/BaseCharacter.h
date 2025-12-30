@@ -97,6 +97,7 @@ public:
     FText MonsterName;
 
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
+    FORCEINLINE void SetStatComponent(UStatComponent* StatComp) { StatComponent = StatComp; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="00_StatCompoent")
 	int32 LevelUpPoint = 5;

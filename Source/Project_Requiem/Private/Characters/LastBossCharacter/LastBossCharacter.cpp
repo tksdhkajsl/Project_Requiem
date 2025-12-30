@@ -298,14 +298,10 @@ void ALastBossCharacter::LastBossEndDead(UAnimMontage* Montage, bool bInterrupte
 
 	Destroy();
 
-
-	/** 12/27 보스 죽은 후 마지막 엔딩크리뎃쪽으로 넘어가는 로직 추가. 현재 천 수호 작업 본과 합치지 못하여 맵이 존재 하지 않음으로, 우선 주석처리. 
-			  일정 시간후 다음레벨로 넘어갈 경우 해당 함수 하나 파서 밑에 엔딩쪽과 연결 시키면 됩니다.
-	*/
 	//FTimerHandle LevelChangeTimer;
 	//GetWorld()->GetTimerManager().SetTimer(LevelChangeTimer, this, &ALastBossCharacter::GoToNextLevel, 0.1f, false);
-	//FName FirstStageLevelName = TEXT("Ending??");
-	//UGameplayStatics::OpenLevel(GetWorld(), FirstStageLevelName);
+	FName FirstStageLevelName = TEXT("EndingLevel");
+	UGameplayStatics::OpenLevel(GetWorld(), FirstStageLevelName);
 }
 
 void ALastBossCharacter::ActivateBossBattle()

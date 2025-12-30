@@ -1,5 +1,7 @@
 #include "Core/PRGameModeBase.h"
 #include "Core/PRPlayerController.h"
+#include "Kismet/GameplayStatics.h"
+
 // ========================================================
 // 언리얼 기본생성
 // ========================================================

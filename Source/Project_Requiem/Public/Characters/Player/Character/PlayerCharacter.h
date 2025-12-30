@@ -315,4 +315,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Snow")
 	float MaxDist = 3000.f;
 #pragma endregion
+
+
+/* 12/30 레벨 전환시 데이타 저장용 함수*/
+#pragma region 게임인스턴스 저장용
+public:
+	UFUNCTION()
+	bool SavePlayerComponents();
+	UFUNCTION()
+	bool LoadPlayerComponents();
+#pragma endregion
+
 };

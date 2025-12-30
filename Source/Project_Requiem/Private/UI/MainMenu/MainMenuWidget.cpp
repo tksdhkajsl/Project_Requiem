@@ -57,7 +57,8 @@ void UMainMenuWidget::PlayMenuBoxAnimation()
 void UMainMenuWidget::OnStartGameClicked()
 {
     /// 코드 추가 : 12/25 미리 함수 하나 추가해 놓음(추후 레벨이름 확정시 TEXT 내 레벨이름 변경 요망)
-    FName FirstStageLevelName = TEXT("Stage1");
+    /* 12/30 사기맵 하나 추가 */
+    FName FirstStageLevelName = TEXT("FraudStage1");
     UGameplayStatics::OpenLevel(GetWorld(), FirstStageLevelName);
 }
 void UMainMenuWidget::OnLoadGameClicked()

@@ -89,7 +89,9 @@ bool ULockOnComponent::IsValidTarget(AActor* TargetActor) const
 	// 1. 보스 체크
 	if (ABossBase* Boss = Cast<ABossBase>(TargetActor))
 	{
-		return (Boss->CurrentState != EBossState::Dead && Boss->CurrentHP > 0.0f);
+		/* 12/30 멤버변수 은닉화로 인하여 Getter 이용하도록 변경.
+		//return (Boss->CurrentState != EBossState::Dead && Boss->CurrentHP > 0.0f); */
+		return (Boss->GetBossBaseState() != EBossState::Dead && Boss->GetBossBaseCurrentHP() > 0.0f);
 	}
 	// 2. 일반 적 & 라스트 보스 체크
 	else if (ABaseCharacter* BaseChar = Cast<ABaseCharacter>(TargetActor))

@@ -2,6 +2,7 @@
 #include "UI/Ending/EndingPawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Ending/EndingCreditWidget.h"
+#include "Core/PRGameInstance.h"
 
 APREndingGameModeBase::APREndingGameModeBase()
 {
@@ -10,6 +11,12 @@ APREndingGameModeBase::APREndingGameModeBase()
 void APREndingGameModeBase::BeginPlay()
 {
     Super::BeginPlay();
+
+    UPRGameInstance* GI = Cast<UPRGameInstance>(GetGameInstance());
+    if (!GI) return;
+
+    GI->SavedWeaponMastery = nullptr;
+    GI->SavedStatComponent = nullptr;
 
     APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 
