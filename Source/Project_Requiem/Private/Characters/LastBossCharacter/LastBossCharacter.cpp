@@ -117,6 +117,8 @@ void ALastBossCharacter::LastBossSpawn(UAnimMontage* Montage)
 	// 페이즈 1 백그라운드 음악 실행
 	PlayBackgroundMusic(PhaseOneMusic);
 
+	GetMesh()->SetVisibility(true, true);
+
 	if (Montage && GetMesh() && GetMesh()->GetAnimInstance())
 	{
 		// 스폰시 몽타주 실행
@@ -353,6 +355,9 @@ void ALastBossCharacter::ResetLastBoss()
 {
 	/** 12/27 보스 체력바 숨기기 위해서 */
 	OnBossDeathUpdated.Broadcast();
+
+	GetMesh()->SetVisibility(false, true);
+
 	// 위치 초기화
 	SetActorLocation(SpawnLocation);
 	SetActorRotation(FRotator::ZeroRotator);
