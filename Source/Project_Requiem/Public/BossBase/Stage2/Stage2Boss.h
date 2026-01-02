@@ -1,19 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Stage2Boss.h
 #pragma once
 
 #include "CoreMinimal.h"
 #include "BossBase/BossBase.h"
 #include "Stage2Boss.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class PROJECT_REQUIEM_API AStage2Boss : public ABossBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	AStage2Boss();
 

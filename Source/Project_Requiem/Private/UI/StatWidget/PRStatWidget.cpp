@@ -6,6 +6,21 @@
 #include "Stats/Data/ELevelUpStats.h"
 #include "Stats/Data/EFullStats.h"
 
+#include "Characters/Player/Weapons/WeaponMasteryComponent.h"
+#include "Weapon/WeaponCodeEnum.h"
+
+#include "UObject/EnumProperty.h"
+
+// ========================================================
+// 헬퍼함수
+// ========================================================
+static FText GetWeaponRankDisplayName(EWeaponRank Rank)
+{
+    const UEnum* Enum = StaticEnum<EWeaponRank>();
+    if (!Enum) return FText::GetEmpty();
+
+    return Enum->GetDisplayNameTextByValue(static_cast<int64>(Rank));
+}
 // ========================================================
 // 언리얼 기본 생성
 // ========================================================
@@ -56,7 +71,7 @@ void UPRStatWidget::InitializeStatValues()
     FString ExpString = FString::Printf(TEXT("%.0f"), CurrentExp); // 소수점 없이 정수로 표시
     SoulValueText->SetText(FText::FromString(ExpString));
 
-    //StatRenderList->HiddenButton();
+    StatRenderList->HiddenButton();
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Strength, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Strength));
     StatRenderList->UpdateLevelUpStat(ELevelUpStats::Dexterity, CachedStatComponent->LevelUpStats.GetAllocatedPoint(ELevelUpStats::Dexterity));
 
@@ -70,6 +85,9 @@ void UPRStatWidget::InitializeStatValues()
 
     float PhyAtt = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalAttack);
     StatRenderList->UpdateSingleStat(EFullStats::PhysicalAttack, PhyAtt);
+    // [추가] 12/29, 공격 속도가 표기가 안 되어 있었음
+    float AttSpeed = CachedStatComponent->GetStatCurrent(EFullStats::AttackSpeed);
+    StatRenderList->UpdateSingleStat(EFullStats::AttackSpeed, AttSpeed);
     float MagAtt = CachedStatComponent->GetStatCurrent(EFullStats::MagicAttack);
     StatRenderList->UpdateSingleStat(EFullStats::MagicAttack, MagAtt);
     float PhyDef = CachedStatComponent->GetStatCurrent(EFullStats::PhysicalDefense);
@@ -95,4 +113,22 @@ void UPRStatWidget::HandleRequestLevelUpStat(ELevelUpStats StatType)
     if (!CachedStatComponent) return;
 
     CachedStatComponent->AllocatedLevelUpStat(StatType);
+}
+// ========================================================
+// 웨폰마스터리
+// ========================================================
+void UPRStatWidget::SetWeaponMasteryComponent(UWeaponMasteryComponent* Component)
+{
+    if (Component) {
+        CachedWeaponMastery = Component;
+
+        FWeaponMasteryData data = CachedWeaponMastery->GetMasteryData(EWeaponCode::OneHandedSword);
+        const FWeaponMasteryData Onehand = Component->GetMasteryData(EWeaponCode::OneHandedSword);
+        const FWeaponMasteryData Twohand = Component->GetMasteryData(EWeaponCode::TwoHandedSword);
+        const FWeaponMasteryData Dual = Component->GetMasteryData(EWeaponCode::DualBlade);
+
+        if (TextOnehand) TextOnehand->SetText(GetWeaponRankDisplayName(Onehand.CurrentRank));
+        if (TextTwohand) TextTwohand->SetText(GetWeaponRankDisplayName(Twohand.CurrentRank));
+        if (TextDual) TextDual->SetText(GetWeaponRankDisplayName(Dual.CurrentRank));
+    }
 }

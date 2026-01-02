@@ -97,6 +97,7 @@ public:
     FText MonsterName;
 
 	FORCEINLINE UStatComponent* GetStatComponent() const { return StatComponent; }
+    FORCEINLINE void SetStatComponent(UStatComponent* StatComp) { StatComponent = StatComp; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="00_StatCompoent")
 	int32 LevelUpPoint = 5;
@@ -139,6 +140,7 @@ public:
     virtual void StopMovement();
 
     // ---- Combat & Actions ----
+    UFUNCTION(BlueprintCallable)
     virtual void Attack(AActor* HitActor, float AttackDamage);
     virtual void StopAttack();
     virtual bool CanAttack() const;

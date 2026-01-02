@@ -3,31 +3,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimNotifies/AnimNotify.h"
 #include "Characters/LastBossCharacter/Projectile/ProjectileBase.h"
-#include "Animation/AnimNotifies/AnimNotifyState.h"
-#include "BossAnimNotifyStateProjectileSpawn.generated.h"
+#include "BossAnimNotifyProjectileSpawn.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROJECT_REQUIEM_API UBossAnimNotifyStateProjectileSpawn : public UAnimNotifyState
+class PROJECT_REQUIEM_API UBossAnimNotifyProjectileSpawn : public UAnimNotify
 {
 	GENERATED_BODY()
 	
 public:
-	virtual void NotifyBegin(
-		USkeletalMeshComponent* MeshComp,
-		UAnimSequenceBase* Animation,
-		float TotalDuration,
-		const FAnimNotifyEventReference& EventReference) override;
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 
-	virtual void NotifyEnd(
-		USkeletalMeshComponent* MeshComp,
-		UAnimSequenceBase* Animation,
-		const FAnimNotifyEventReference& EventReference) override;
 
-	// 투사체 스폰 함수
 	void DoSpawnProjectile(TSubclassOf<AProjectileBase> InSpawnActor);
 
 protected:

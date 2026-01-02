@@ -10,6 +10,8 @@ class UPRHUDBossWidget;
 class UPRHUDItemWidget;
 class UPRHUDPotionWidget;
 class UTexture2D;
+class UTextBlock;
+class APlayerCharacter;
 
 UCLASS()
 class PROJECT_REQUIEM_API UPRHUDWidget : public UUserWidget
@@ -30,6 +32,9 @@ public:
     // 델리게이트용 스탯바 업데이트 함수
     UFUNCTION()
     void HandleRegenStatChanged(EFullStats StatType, float CurrValue, float MaxValue);
+    // [추가] 12/31, 레벨업(스탯 투자) 발생 시 호출될 함수 (Max 수치 변경 감지용)
+    UFUNCTION()
+    void HandleLevelUpStatsUpdated(ELevelUpStats StatType, int32 AllocatedPoints);
     // HP바 업데이트하는 함수
     UFUNCTION(BlueprintCallable, Category = "HUD Control")
     void UpdateHPBar(float CurrentValue, float MaxValue);
@@ -45,7 +50,6 @@ public:
     TObjectPtr<UPRHUDStatBarWidget> BarST;
 #pragma endregion
 
-    /// Todo : 보스 캐릭터 확정시 만들어야 함.
 #pragma region 보스 HP바 갱신
 public:
     UFUNCTION()
@@ -94,5 +98,17 @@ public:
     UTexture2D* PotionImage;
 #pragma endregion
 
+#pragma region 인터렉션
+public:
+    UFUNCTION(BlueprintCallable)
+    void UpdateActionText(const FText& text);
 
+    UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+    UTextBlock* ActionTextValue;
+#pragma endregion
+
+#pragma region 캐싱용
+    UPROPERTY(BlueprintReadOnly)
+    TObjectPtr<APlayerCharacter> Player;
+#pragma endregion
 };

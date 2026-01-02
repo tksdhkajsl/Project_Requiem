@@ -4,9 +4,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "PRGameModeBase.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class PROJECT_REQUIEM_API APRGameModeBase : public AGameModeBase
 {

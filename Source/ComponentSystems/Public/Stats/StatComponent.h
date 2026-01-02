@@ -33,6 +33,71 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnRegenStatChanged, EFullStats, 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnExpChanged, float, CurrentExp);
 #pragma endregion
 
+#pragma region 데이터 저장 용 임시 구조체
+USTRUCT(BlueprintType)
+struct FStatComponentData
+{
+	GENERATED_BODY()
+
+	/* =========================
+	 * 공통 / 시스템
+	 * ========================= */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|System")
+	float TimerTick = 1.f;
+
+	/* =========================
+	 * 힘 (STR)
+	 * ========================= */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|HP")
+	float CurrHP = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|HP")
+	float MaxHP = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|HP")
+	float HPRegen = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Attack")
+	float PhyAtt = 30.f;
+
+	/* =========================
+	 * 민첩 (DEX)
+	 * ========================= */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|ST")
+	float CurrST = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|ST")
+	float MaxST = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|ST")
+	float STRegen = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Attack")
+	float AttSpeed = 1.f;
+
+	/* =========================
+	 * 기타
+	 * ========================= */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Attack")
+	float MagAtt = 20.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Defense")
+	float PhyDef = 10.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Defense")
+	float MagDef = 5.f;
+
+	/* =========================
+	 * 경험치 / 레벨
+	 * ========================= */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|EXP")
+	float RequiredExp = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|EXP")
+	float CurrentExp = 0.f;
+};
+#pragma endregion
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class COMPONENTSYSTEMS_API UStatComponent : public UActorComponent
 {
@@ -46,6 +111,15 @@ class COMPONENTSYSTEMS_API UStatComponent : public UActorComponent
 */
 	
 #pragma region 변경 요망
+public:
+	// [추가] 스태미너 회복 일시정지 설정 함수
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void SetStaminaRegenPaused(bool bPaused) { bIsStaminaRegenPaused = bPaused; }
+
+protected:
+	// [추가] 스태미너 회복 정지 여부 플래그
+	bool bIsStaminaRegenPaused = false;
+
 public:
 	/** 타이머 틱 부분 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "00_Setting")
@@ -161,5 +235,73 @@ private:
 	void HandleStatRegeneration();
 	UPROPERTY()
 	FTimerHandle StatRegenTimerHandle;
+#pragma endregion
+
+#pragma region 임시 저장용/로드용
+
+public:
+	FStatComponentData SaveData() const
+	{
+		FStatComponentData Data;
+
+		Data.TimerTick = TimerTick;
+
+		// ===== Regen Stats =====
+		if (const FCoreStat* HP = StatsRegenMap.Find(EFullStats::Health)) {
+			Data.CurrHP = HP->Current;
+			Data.MaxHP = HP->Max;
+			Data.HPRegen = HP->TickRate;
+		}
+
+		if (const FCoreStat* ST = StatsRegenMap.Find(EFullStats::Stamina)) {
+			Data.CurrST = ST->Current;
+			Data.MaxST = ST->Max;
+			Data.STRegen = ST->TickRate;
+		}
+
+		// ===== Non-Regen Stats =====
+		if (const FCoreStat* PhyAtk = StatsNonRegenMap.Find(EFullStats::PhysicalAttack))
+			Data.PhyAtt = PhyAtk->Current;
+
+		if (const FCoreStat* AtkSpeed = StatsNonRegenMap.Find(EFullStats::AttackSpeed))
+			Data.AttSpeed = AtkSpeed->Current;
+
+		if (const FCoreStat* MagAtk = StatsNonRegenMap.Find(EFullStats::MagicAttack))
+			Data.MagAtt = MagAtk->Current;
+
+		if (const FCoreStat* PhyDefStat = StatsNonRegenMap.Find(EFullStats::PhysicalDefense))
+			Data.PhyDef = PhyDefStat->Current;
+
+		if (const FCoreStat* MagDefStat = StatsNonRegenMap.Find(EFullStats::MagicDefense))
+			Data.MagDef = MagDefStat->Current;
+
+		Data.RequiredExp = RequiredExp;
+		Data.CurrentExp = CurrentExp;
+
+		return Data;
+	}
+	void LoadData(const FStatComponentData& InData)
+	{
+		TimerTick = InData.TimerTick;
+		CurrHP = InData.CurrHP;
+		MaxHP = InData.MaxHP;
+		HPRegen = InData.HPRegen;
+		PhyAtt = InData.PhyAtt;
+		CurrST = InData.CurrST;
+		MaxST = InData.MaxST;
+		STRegen = InData.STRegen;
+		AttSpeed = InData.AttSpeed;
+		MagAtt = InData.MagAtt;
+		PhyDef = InData.PhyDef;
+		MagDef = InData.MagDef;
+		RequiredExp = InData.RequiredExp;
+		CurrentExp = InData.CurrentExp;
+
+		InitializeStatsComponent();
+
+	}
+private:
+	UPROPERTY()
+	FStatComponentData StatData;
 #pragma endregion
 };

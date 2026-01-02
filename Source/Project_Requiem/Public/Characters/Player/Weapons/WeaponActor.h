@@ -4,33 +4,44 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Characters/Player/Character/PlayerCharacter.h"
 #include "Weapon/WeaponCodeEnum.h"
 #include "WeaponActor.generated.h"
+
+class APlayerCharacter;
 
 UCLASS()
 class PROJECT_REQUIEM_API AWeaponActor : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+	public:
 	// Sets default values for this actor's properties
 	AWeaponActor();
 
-	// 메시 위치를 조정하는 내부 함수
-	void AdjustMeshToSocket(USkeletalMeshComponent* InMesh);
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	void OnWeaponBeginOverlap(AActor* OverlappedActor, AActor* OtherActor);
 
-	virtual void OnWeaponActivate() {};
+public:
+	// 메시 위치를 조정하는 내부 함수
+	void AdjustMeshToSocket(USkeletalMeshComponent* InMesh);
+
+	// 공격 활성화/비활성화 (플레이어가 호출)
+	UFUNCTION(BlueprintCallable)
+	void AttackEnable(bool bEnable, int32 ComboCount);
+
+	// 랭크에 맞춰 이펙트 교체 함수
+	void UpdateVFXByRank(EWeaponRank NewRank);
+
+protected:
+	UFUNCTION()
+	void OnWeaponBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	virtual void OnWeaponDeactivate() {};
 
-public:	
+public:
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 	FORCEINLINE USkeletalMeshComponent* GetLeftWeaponMesh() const { return LeftWeaponMesh; }
 
@@ -57,6 +68,9 @@ protected:
 	TObjectPtr<class UNiagaraComponent> WeaponSlashEffect = nullptr;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<class UNiagaraComponent> WeaponSlashEffectLeft = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UAudioComponent> WeaponAudioComponent = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
@@ -66,28 +80,24 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName GripSocketName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
-	float Damage = 10.0f;
+	// 랭크별 이펙트 목록
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "VFX")
+	TMap<EWeaponRank, class UNiagaraSystem*> RankVFXMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
-	TSubclassOf<UDamageType> DamageType = nullptr;
+	// [추가] 왼손 소켓 이름 저장용
+	UPROPERTY(EditDefaultsOnly, Category = "Socket")
+	FName LeftHandGripSocketName = TEXT("HandGripL");
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float AreaInnerRadius = 100.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float AreaOuterRadius = 300.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float Falloff = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	float DebugDuration = 1.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data|Area")
-	TObjectPtr<class UNiagaraSystem> AreaAttackEffect = nullptr;
+	// [추가] 중복 타격 방지를 위한 목록
+	UPROPERTY()
+	TArray<AActor*> HitActors;
 
 private:
 	TWeakObjectPtr<APlayerCharacter> WeaponOwner = nullptr;
+
+protected:
+	// 무기 효과음 모음
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	TArray<TObjectPtr<USoundBase>> SwingSounds;
 
 };

@@ -4,7 +4,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 
 // ========================================================
-// �𸮾� �⺻ ���� �� �ʱ�ȭ
+// 언리얼 기본 생성
 // ========================================================
 void UPRHUDItemWidget::NativeConstruct()
 {
@@ -13,7 +13,7 @@ void UPRHUDItemWidget::NativeConstruct()
 	if (!ItemNum)   UE_LOG(LogTemp, Error, TEXT("ItemNum (TextBlock) is not bound in UMG!"));
 }
 // ========================================================
-// UI �����
+// UI 변경용
 // ========================================================
 void UPRHUDItemWidget::ChangeItemImage(UTexture2D* NewTexture)
 {

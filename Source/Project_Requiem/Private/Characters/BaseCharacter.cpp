@@ -3,10 +3,6 @@
 #include "Stats/StatComponent.h"
 #include <Kismet/GameplayStatics.h>
 
-#pragma region 캡쳐 컴포넌트 관련
-
-#pragma endregion
-
 //---------------기본 생성-------------------
 ABaseCharacter::ABaseCharacter()
 {

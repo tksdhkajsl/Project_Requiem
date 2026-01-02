@@ -95,7 +95,8 @@ void UStatComponent::UpgradeStrength()
 void UStatComponent::UpgradeDexterity()
 {
 	if (FCoreStat* StaminaStat = StatsRegenMap.Find(EFullStats::Stamina)) StaminaStat->Max *= 1.1f;
-	if (FCoreStat* AttSpeedStat = StatsNonRegenMap.Find(EFullStats::AttackSpeed)) AttSpeedStat->Current *= 1.1f;
+	// [수정] 12/31, 공격속도 1.05배수로 수정
+	if (FCoreStat* AttSpeedStat = StatsNonRegenMap.Find(EFullStats::AttackSpeed)) AttSpeedStat->Current *= 1.05f;
 	
 	BroadcastStats(StatsRegenMap, OnRegenStatsUpdated);
 	BroadcastStats(StatsNonRegenMap, OnNonRegenStatsUpdated);
@@ -161,6 +162,9 @@ void UStatComponent::HandleStatRegeneration()
 	static UEnum* EnumPtr = StaticEnum<EFullStats>();
 	for (auto& Pair : StatsRegenMap) {
 		FCoreStat& Stat = Pair.Value;
+		// 스태미너이고, 일시정지 상태라면 회복 건너뜀
+		if (Pair.Key == EFullStats::Stamina && bIsStaminaRegenPaused) continue;
+
 		if (!FMath::IsNearlyZero(Stat.TickRate)) {
 			Stat.Current = FMath::Clamp(Stat.Current + Stat.TickRate * TimerTick, 0.f, Stat.Max);
 			OnRegenStatChanged.Broadcast(Pair.Key, Stat.Current, Stat.Max);

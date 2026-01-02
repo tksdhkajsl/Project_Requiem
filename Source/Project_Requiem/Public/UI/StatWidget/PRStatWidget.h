@@ -7,6 +7,7 @@
 class UPRPlayerPortraitWidget;
 class UPRStatRenderWidget;
 class UStatComponent;
+class UWeaponMasteryComponent;
 class UTextBlock;
 enum class ELevelUpStats : uint8;
 enum class EFullStats : uint8;
@@ -62,9 +63,30 @@ public:
     UFUNCTION()
     void HandleRequestLevelUpStat(ELevelUpStats StatType);
 
-    FORCEINLINE UStatComponent* GetCachedStatComponent() const { return CachedStatComponent; }
 private:
     UPROPERTY()
     TObjectPtr<UStatComponent> CachedStatComponent;
 #pragma endregion
+
+#pragma region 웨폰마스터리
+public:
+    UFUNCTION(BlueprintCallable, Category = "WeaponMastery")
+    void SetWeaponMasteryComponent(UWeaponMasteryComponent* Component);
+
+    FORCEINLINE UStatComponent* GetCachedStatComponent() const { return CachedStatComponent; }
+private:
+    UPROPERTY()
+    TObjectPtr<UWeaponMasteryComponent> CachedWeaponMastery;
+
+    
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextOnehand;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextTwohand;
+
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTextBlock> TextDual;
+#pragma endregion
+
 };

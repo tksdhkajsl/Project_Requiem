@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Interface/Boss/BossControlInterface.h"
 #include "PRPlayerController.generated.h"
 
 class UPRHUDWidget;
@@ -13,7 +14,6 @@ UCLASS()
 class PROJECT_REQUIEM_API APRPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
 	
 #pragma region 언리얼 기본 생성
 public:
@@ -32,15 +32,20 @@ public:
 	UPROPERTY()
 	TObjectPtr<UPRHUDWidget> PlayerHUD;
 
-	/** 1번째 무기 바인딩 */
+	///** 1번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard1();
+	///** 2번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard2();
+	///** 3번째 무기 바인딩 */
+	//UFUNCTION()
+	//void PushDownKeyboard3();
+
+	//[수정] 12/29 무기 바인딩 UI 업데이트 함수 (기존의 PushDownKeyboard를 통합함)
 	UFUNCTION()
-	void PushDownKeyboard1();
-	/** 2번째 무기 바인딩 */
-	UFUNCTION()
-	void PushDownKeyboard2();
-	/** 3번째 무기 바인딩 */
-	UFUNCTION()
-	void PushDownKeyboard3();
+	void UpdateHUDWeaponSlot(int32 SlotIndex);
+
 	/** 포션 용 키 바인딩 */
 	UFUNCTION()
 	void PushDownKeyboard4(int32 PotionNum);
@@ -48,13 +53,16 @@ public:
 
 #pragma region 보스 관련 HUD 갱신
 public:
+	/** 12/27 보스 연동 위해 AActor로 변경함 */
 	UFUNCTION()
-	void OnEnterBossRoom(ABaseCharacter* Boss);
+	void OnEnterBossRoom(AActor* Boss);
 	UFUNCTION()
-	void HandleBossHPChanged(EFullStats StatType, float Curr, float Max);
+	void HandleBossStatUpdate(float Cur, float Max, FText Name);
+	UFUNCTION()
+	void HandleBossDeath();
 
 	UPROPERTY(VisibleAnywhere, Transient, Category = "Boss Data")
-	ABaseCharacter* ActiveBoss = nullptr;
+	ACharacter* ActiveBoss = nullptr;
 #pragma endregion
 
 #pragma region 스탯 위젯 클래스
