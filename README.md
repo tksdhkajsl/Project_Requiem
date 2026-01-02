@@ -8,9 +8,9 @@ https://drive.google.com/file/d/1sN-MLNHuqj5SztxFZqbjes9PHs40mbm3/view?usp=drive
 https://drive.google.com/file/d/1WyswZ3QsuCN3MYWsKVXnBFBDSe4zX3gZ/view?usp=drive_link
 
 #### 소스코드 설치방법
-0-1. 프로젝트 소스코드 다운로드
-0-2. 상단 콘텐츠 폴더 다운로드 후 압축풀기
-0-3. 상단 z_Legacy폴더 다운로드 후 콘텐츠 폴더 내부에 압축 풀기.
+- 0-1. 프로젝트 소스코드 다운로드
+- 0-2. 상단 콘텐츠 폴더 다운로드 후 압축풀기
+- 0-3. 상단 z_Legacy폴더 다운로드 후 콘텐츠 폴더 내부에 압축 풀기.
 
 
 ## 1. 프로젝트 정보
