@@ -305,8 +305,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	EStageType CurrentStage;
 
-	UPROPERTY(VisibleAnywhere)
-	UNiagaraComponent* SnowNiagara;
+	//UPROPERTY(VisibleAnywhere)
+	//UNiagaraComponent* SnowNiagara;
 
 
 	UFUNCTION()

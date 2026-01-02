@@ -82,18 +82,19 @@ void AEndingPawn::Tick(float DeltaTime)
     case EEndingState::LookAtSun: {
         if (!SunLight) return;
 
-        FVector SunDir = -SunLight->GetActorForwardVector();
-        FVector LookTarget = GetActorLocation() + SunDir * 10000.f;
+        //FVector SunDir = -SunLight->GetActorForwardVector();
+        //FVector LookTarget = GetActorLocation() + SunDir * 10000.f;
 
-        FRotator TargetRot = (LookTarget - GetActorLocation()).Rotation();
-        FRotator NewRot = FMath::RInterpTo(GetActorRotation(),TargetRot,DeltaTime,LookAtInterpSpeed);
+        //FRotator TargetRot = (LookTarget - GetActorLocation()).Rotation();
+        //FRotator NewRot = FMath::RInterpTo(GetActorRotation(),TargetRot,DeltaTime,LookAtInterpSpeed);
 
-        SetActorRotation(NewRot);
+        //SetActorRotation(NewRot);
 
-        if (GetActorRotation().Equals(TargetRot, 1.0f)) {
-            bLookAtSun = false;
-            SetActorTickEnabled(false);
-        }
+        //if (GetActorRotation().Equals(TargetRot, 1.0f)) {
+        //    bLookAtSun = false;
+        //    SetActorTickEnabled(false);
+        //}
+        SetActorTickEnabled(false);
     }
         break;
     case EEndingState::None:

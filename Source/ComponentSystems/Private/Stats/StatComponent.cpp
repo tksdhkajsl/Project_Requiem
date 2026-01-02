@@ -52,8 +52,16 @@ void UStatComponent::InitializeStatsComponent()
 	for (int i = 1; i < EnumPtr->NumEnums() - 1; ++i) // MAX 제외
 	{
 		ELevelUpStats Temp = static_cast<ELevelUpStats>(EnumPtr->GetValueByIndex(i));
-		if (Temp != ELevelUpStats::MAX) OnLevelUpStatsUpdated.Broadcast(Temp, LevelUpStats.GetAllocatedPoint(Temp));
+		OnLevelUpStatsUpdated.Broadcast(Temp, LevelUpStats.GetAllocatedPoint(Temp));
 	}	
+
+
+#pragma region 땜질좀합시다
+	for (int i = 0; i < StatData.LevelUpStats.GetAllocatedPoint(ELevelUpStats::Strength); i++) LevelUpStats.AllocatePoint(ELevelUpStats::Strength);
+	for (int i = 0; i < StatData.LevelUpStats.GetAllocatedPoint(ELevelUpStats::Dexterity); i++) LevelUpStats.AllocatePoint(ELevelUpStats::Dexterity);
+
+#pragma endregion
+
 }
 // ========================================================
 // 기본 스탯 관련

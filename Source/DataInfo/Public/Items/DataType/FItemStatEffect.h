@@ -12,7 +12,7 @@ struct FItemStatEffect
 public:
     /** 변경할 스탯 */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
-    EFullStats StatType = EFullStats::None;
+    EFullStats StatType;
 
     /** 변화량 (+ / - 모두 가능) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")

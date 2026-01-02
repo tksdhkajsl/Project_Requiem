@@ -75,10 +75,10 @@ APlayerCharacter::APlayerCharacter()
 	PortraitCaptureComponent->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
 #pragma endregion
 
-	// Stage2용 나이아가라
-	SnowNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("SnowNiagara"));
-	SnowNiagara->SetupAttachment(RootComponent);
-	SnowNiagara->SetVariableFloat(TEXT("User.SpawnRateMultiplier"), 1.0f);
+	//// Stage2용 나이아가라
+	//SnowNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("SnowNiagara"));
+	//SnowNiagara->SetupAttachment(RootComponent);
+	//SnowNiagara->SetVariableFloat(TEXT("User.SpawnRateMultiplier"), 1.0f);
 
 	// 포션용 나이아가라 컴포넌트
 	PotionEffectComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("PotionEffectComponent"));
@@ -186,7 +186,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			SetWalkMode(FInputActionValue());
 		}
 	}
-	if (CurrentStage == EStageType::Stage2 && CachedBoss) {
+/*	if (CurrentStage == EStageType::Stage2 && CachedBoss) {
 		
 		if (!SnowNiagara->IsActive()) SnowNiagara->Activate(true);
 		float Dist = FVector::Distance(GetActorLocation(), CachedBoss->GetActorLocation());
@@ -194,7 +194,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		float SpawnRate = FMath::Lerp(1.f, 500.f, Alpha);
 		SnowNiagara->SetVariableFloat(TEXT("User.SpawnRateMultiplier"), SpawnRate);
 	}
-	else if (SnowNiagara->IsActive()) SnowNiagara->Deactivate();		
+	else if (SnowNiagara->IsActive()) SnowNiagara->Deactivate();*/		
 }
 void APlayerCharacter::BeginPlay()
 {
@@ -913,8 +913,8 @@ void APlayerCharacter::HandleStageEntered(EStageType NewStage)
 
 	CurrentStage = NewStage;
 
-	if (CurrentStage == EStageType::Stage2) SnowNiagara->Activate();
-	else SnowNiagara->Deactivate();
+	//if (CurrentStage == EStageType::Stage2) SnowNiagara->Activate();
+	//else SnowNiagara->Deactivate();
 }
 
 bool APlayerCharacter::SavePlayerComponents()

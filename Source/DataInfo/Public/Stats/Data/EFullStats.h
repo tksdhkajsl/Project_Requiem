@@ -9,8 +9,6 @@
 UENUM(BlueprintType)
 enum class EFullStats : uint8
 {
-    None UMETA(Hidden),
-
     // -----------------------------
     // 힘 올릴시
     // -----------------------------
@@ -29,6 +27,4 @@ enum class EFullStats : uint8
     MagicAttack     UMETA(DisplayName = "마공", Category = "NoRegen"),
     PhysicalDefense UMETA(DisplayName = "물방", Category = "NoRegen"),
     MagicDefense    UMETA(DisplayName = "마방", Category = "NoRegen"),
-
-    MAX UMETA(Hidden)
 };

@@ -42,14 +42,19 @@ public:
         AllocatedPoints.Empty();
 
         for (int32 Index = 0; Index < NumEnums; ++Index) {
-            if (!EnumPtr->HasMetaData(TEXT("Hidden"), Index)) {
-                ELevelUpStats Stat = static_cast<ELevelUpStats>(EnumPtr->GetValueByIndex(Index));
-
-                if (Stat != ELevelUpStats::MAX) {
-                    AllocatedPoints.Add(Stat, 0);
-                }
-            }
+            ELevelUpStats Stat = static_cast<ELevelUpStats>(EnumPtr->GetValueByIndex(Index));
+            AllocatedPoints.Add(Stat, 0);
         }
+
+        //for (int32 Index = 0; Index < NumEnums; ++Index) {
+        //    if (!EnumPtr->HasMetaData(TEXT("Hidden"), Index)) {
+        //        ELevelUpStats Stat = static_cast<ELevelUpStats>(EnumPtr->GetValueByIndex(Index));
+
+        //        if (Stat != ELevelUpStats::MAX) {
+        //            AllocatedPoints.Add(Stat, 0);
+        //        }
+        //    }
+        //}
     }
 
     /** 특정 스탯에 포인트 +1 */

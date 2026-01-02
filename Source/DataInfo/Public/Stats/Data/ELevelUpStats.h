@@ -10,11 +10,8 @@
 UENUM(BlueprintType, meta = (ScriptName = "LevelUpStatTypes"))
 enum class ELevelUpStats : uint8
 {
-    None UMETA(Hidden),
 
     // 전투 관련
     Strength    UMETA(DisplayName = "힘"),      /** 체력/물리 공격력 */
     Dexterity   UMETA(DisplayName = "민첩"),    /** 기력/공격속도 */
-
-    MAX UMETA(Hidden)
 };

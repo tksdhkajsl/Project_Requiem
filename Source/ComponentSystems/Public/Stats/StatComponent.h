@@ -21,7 +21,7 @@ struct FStatEntry
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	EFullStats StatType = EFullStats::None;
+	EFullStats StatType;
 
 	UPROPERTY(BlueprintReadOnly)
 	FCoreStat StatValue;
@@ -95,6 +95,8 @@ struct FStatComponentData
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|EXP")
 	float CurrentExp = 0.f;
+
+	FLevelUpStats LevelUpStats;
 };
 #pragma endregion
 
@@ -278,10 +280,13 @@ public:
 		Data.RequiredExp = RequiredExp;
 		Data.CurrentExp = CurrentExp;
 
+		Data.LevelUpStats = LevelUpStats;
+
 		return Data;
 	}
 	void LoadData(const FStatComponentData& InData)
 	{
+		StatData = InData;
 		TimerTick = InData.TimerTick;
 		CurrHP = InData.CurrHP;
 		MaxHP = InData.MaxHP;
@@ -296,6 +301,8 @@ public:
 		MagDef = InData.MagDef;
 		RequiredExp = InData.RequiredExp;
 		CurrentExp = InData.CurrentExp;
+
+		LevelUpStats = InData.LevelUpStats;
 
 		InitializeStatsComponent();
 
